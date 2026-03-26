@@ -1,0 +1,27 @@
+{
+  "name": "frigi",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "shared"
+  ],
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "scripts": {
+    "mobile": "npm run start --workspace=mobile",
+    "shared:build": "npm run build --workspace=shared",
+    "shared:watch": "npm run watch --workspace=shared"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.17"
+  }
+}
