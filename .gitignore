@@ -46,6 +46,7 @@ shared/dist/
 *.swo
 .DS_Store
 Thumbs.db
+PROJECT.md
 
 # Logs
 *.log
