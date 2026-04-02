@@ -10,20 +10,20 @@ class CampaignSeedSpec:
 
 
 class CampaignProgressionModel:
-    SEED_LEVEL_COUNT = 10
+    SEED_LEVEL_COUNT = 50
     MAX_DIFFICULTY = 0.9
     _MILESTONES: tuple[tuple[int, float], ...] = (
-        (1, 0.22),
-        (2, 0.26),
-        (3, 0.30),
-        (4, 0.34),
-        (5, 0.38),
-        (6, 0.43),
-        (7, 0.48),
-        (8, 0.54),
-        (9, 0.60),
-        (10, 0.67),
-        (15, 0.82),
+        (1, 0.26),
+        (2, 0.31),
+        (3, 0.36),
+        (4, 0.42),
+        (5, 0.48),
+        (6, 0.54),
+        (7, 0.60),
+        (8, 0.66),
+        (9, 0.72),
+        (10, 0.78),
+        (15, 0.87),
         (20, MAX_DIFFICULTY),
     )
     _THEME_CYCLE: tuple[str, ...] = (

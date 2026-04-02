@@ -2,7 +2,7 @@
   "expo": {
     "name": "Frigi",
     "slug": "frigi",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frigi",
@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.frigi.app"
+      "bundleIdentifier": "com.frigi.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -45,6 +48,12 @@
     "newArchEnabled": true,
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ed8842e4-d252-4d6e-8f64-8f46be126b8d"
+      }
     }
   }
 }

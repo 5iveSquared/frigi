@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import json
 import random
 import uuid
@@ -261,17 +262,29 @@ class LevelGeneratorService:
             normalized_cells.append(normalized_row)
 
         normalized_items = []
+        seen_item_ids: set[str] = set()
+        seen_item_names: set[str] = set()
         for item in level_data.get("items", []):
+            item_id = self._normalize_item_id(item)
+            item_name = self._normalize_item_name(item)
+            item_name_key = self._normalize_item_key(item_name)
+            if item_id in seen_item_ids or item_name_key in seen_item_names:
+                continue
             normalized_items.append(
                 {
-                    "id": item["id"],
-                    "name": item["name"],
+                    "id": item_id,
+                    "name": item_name,
                     "shape": item["shape"],
                     "zoneRequirement": item.get("zoneRequirement", item.get("zone_requirement")),
                     "points": item["points"],
                     "color": item["color"],
                 }
             )
+            seen_item_ids.add(item_id)
+            seen_item_names.add(item_name_key)
+
+        if len(normalized_items) < 3:
+            raise ValueError("Level must contain at least 3 unique items")
 
         return {
             "grid": {
@@ -285,6 +298,20 @@ class LevelGeneratorService:
             "difficulty": float(level_data.get("difficulty", 0.3)),
         }
 
+    def _normalize_item_id(self, item: dict) -> str:
+        raw_id = str(item.get("id") or item.get("name") or "item").strip().lower()
+        cleaned = "".join(char if char.isalnum() else "-" for char in raw_id)
+        while "--" in cleaned:
+            cleaned = cleaned.replace("--", "-")
+        return cleaned.strip("-") or "item"
+
+    def _normalize_item_name(self, item: dict) -> str:
+        raw_name = str(item.get("name") or item.get("id") or "Item").strip()
+        return " ".join(part for part in raw_name.split() if part)
+
+    def _normalize_item_key(self, value: str) -> str:
+        return "".join(char for char in value.lower() if char.isalnum())
+
     def _generate_procedural_level(
         self,
         difficulty: float,
@@ -297,9 +324,9 @@ class LevelGeneratorService:
 
         layouts = [
             (0.0, {"rows": 4, "cols": 4, "item_count": 4, "fill_ratio": 0.42}),
-            (0.3, {"rows": 5, "cols": 4, "item_count": 5, "fill_ratio": 0.48}),
-            (0.55, {"rows": 5, "cols": 5, "item_count": 6, "fill_ratio": 0.54}),
-            (0.75, {"rows": 6, "cols": 5, "item_count": 7, "fill_ratio": 0.6}),
+            (0.26, {"rows": 5, "cols": 4, "item_count": 5, "fill_ratio": 0.5}),
+            (0.48, {"rows": 5, "cols": 5, "item_count": 6, "fill_ratio": 0.57}),
+            (0.68, {"rows": 6, "cols": 5, "item_count": 7, "fill_ratio": 0.64}),
         ]
         config = layouts[0][1]
         for threshold, candidate in layouts:
@@ -309,7 +336,6 @@ class LevelGeneratorService:
         rows = config["rows"]
         cols = config["cols"]
         grid_area = rows * cols
-        target_item_area = max(6, int(grid_area * config["fill_ratio"]))
         full_item_catalog = [
             {"id": "milk", "name": "Milk", "shape": [[1], [1], [1]], "zoneRequirement": "cold", "points": 30, "color": "#FAFAFA"},
             {"id": "cheese", "name": "Cheese", "shape": [[1, 1], [1, 0]], "zoneRequirement": None, "points": 20, "color": "#F59E0B"},
@@ -335,16 +361,13 @@ class LevelGeneratorService:
             ]
 
         rng.shuffle(item_catalog)
-        selected_items = []
-        used_area = 0
-        for item in item_catalog:
-            item_area = sum(sum(row) for row in item["shape"])
-            if len(selected_items) < config["item_count"] and used_area + item_area <= target_item_area:
-                selected_items.append(item)
-                used_area += item_area
-
-        if len(selected_items) < 3:
-            selected_items = item_catalog[:3]
+        target_item_count = min(config["item_count"], len(item_catalog))
+        target_item_area = self._target_item_area(item_catalog, grid_area, config["fill_ratio"], target_item_count)
+        selected_items = self._select_items_for_layout(
+            item_catalog=item_catalog,
+            target_item_count=target_item_count,
+            target_item_area=target_item_area,
+        )
 
         constraints = []
         if difficulty >= 0.35:
@@ -379,6 +402,53 @@ class LevelGeneratorService:
             "theme": theme or rng.choice(["kitchen", "meal_prep", "grocery", "holiday", "camping"]),
             "difficulty": difficulty,
         }
+
+    def _item_area(self, item: dict) -> int:
+        return sum(sum(row) for row in item["shape"])
+
+    def _target_item_area(
+        self,
+        item_catalog: list[dict],
+        grid_area: int,
+        fill_ratio: float,
+        target_item_count: int,
+    ) -> int:
+        configured_area = max(6, int(grid_area * fill_ratio))
+        if target_item_count <= 0 or not item_catalog:
+            return configured_area
+        minimum_feasible_area = sum(
+            sorted(self._item_area(item) for item in item_catalog)[:target_item_count]
+        )
+        return max(configured_area, minimum_feasible_area)
+
+    def _select_items_for_layout(
+        self,
+        item_catalog: list[dict],
+        target_item_count: int,
+        target_item_area: int,
+    ) -> list[dict]:
+        if not item_catalog:
+            return []
+
+        minimum_count = min(3, len(item_catalog))
+        best_combo: tuple[dict, ...] | None = None
+        best_score: tuple[int, int, int] | None = None
+
+        for count in range(target_item_count, minimum_count - 1, -1):
+            for combo in itertools.combinations(item_catalog, count):
+                area = sum(self._item_area(item) for item in combo)
+                deficit = max(0, target_item_area - area)
+                overflow = max(0, area - target_item_area)
+                score = (-count, deficit, overflow)
+                if best_score is None or score < best_score:
+                    best_score = score
+                    best_combo = combo
+            if best_combo is not None and len(best_combo) == count:
+                break
+
+        if best_combo is not None:
+            return list(best_combo)
+        return item_catalog[:minimum_count]
 
     def _build_grid(self, rows: int, cols: int) -> dict:
         cells = []

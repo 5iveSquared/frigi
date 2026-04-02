@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useGameStore } from '~/store/gameStore';
-import { checkPlacement } from '~/engine/placement';
-import { rotateShape } from '~/engine/rotation';
+import { checkPlacement, getValidPlacements } from '~/engine/placement';
+import { getOccupiedCells, rotateShape } from '~/engine/rotation';
 import type { PlacedItem } from '@frigi/shared';
 import { frigi, frigiZones, polar } from '~/utils/colors';
 import { getFoodEmoji } from '~/utils/foodEmoji';
@@ -77,6 +77,22 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
         rotatedShape: rotateShape(activeItem.shape, activeRotation),
       }
     : null;
+  const placementPreview = useMemo(() => {
+    if (!grid || !activePlaced) {
+      return { anchorKeys: new Set<string>(), footprintKeys: new Set<string>() };
+    }
+
+    const anchorKeys = new Set<string>();
+    const footprintKeys = new Set<string>();
+    for (const placement of getValidPlacements(grid, activePlaced)) {
+      anchorKeys.add(`${placement.row}-${placement.col}`);
+      for (const [row, col] of getOccupiedCells(activePlaced.rotatedShape, placement.row, placement.col)) {
+        footprintKeys.add(`${row}-${col}`);
+      }
+    }
+
+    return { anchorKeys, footprintKeys };
+  }, [grid, activePlaced]);
 
   return (
     <View style={[styles.wrapper, isDaily && styles.wrapperDaily]}>
@@ -108,13 +124,19 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
 
                   <View style={[styles.row, { gap: metrics.cellGap, paddingVertical: metrics.cellGap / 2 }]}>
                     {row.map((cell, c) => {
+                      const cellKey = `${r}-${c}`;
                       const placedItem = cell.itemId ? itemById[cell.itemId] : null;
                       const emoji      = placedItem ? getFoodEmoji(placedItem.name) : null;
                       const isDragTarget =
                         dragTargetCell?.row === r && dragTargetCell?.col === c;
+                      const isFootprintPreview =
+                        !!activePlaced &&
+                        !cell.occupied &&
+                        placementPreview.footprintKeys.has(cellKey);
                       const canTarget  =
                         !!activePlaced &&
                         !cell.occupied &&
+                        placementPreview.anchorKeys.has(cellKey) &&
                         checkPlacement(grid, activePlaced, r, c).valid;
 
                       return (
@@ -137,6 +159,7 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
                             { backgroundColor: cell.occupied
                                 ? (placedItem ? placedItem.color + '33' : frigiZones[cell.zone])
                                 : frigiZones[cell.zone] },
+                            isFootprintPreview && styles.cellFootprintTarget,
                             canTarget  && styles.cellTarget,
                             isDragTarget && canTarget && styles.cellDragTarget,
                             pressed && canTarget && styles.cellPressed,
@@ -147,6 +170,8 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
                             <Text style={[styles.emoji, { fontSize: Math.max(22, 30 * sizeScale) }]}>{emoji}</Text>
                           ) : canTarget ? (
                             <Text style={[styles.dropHint, { fontSize: Math.max(16, 20 * sizeScale) }]}>+</Text>
+                          ) : isFootprintPreview ? (
+                            <View style={styles.footprintDot} />
                           ) : (
                             <ZoneIndicator zone={cell.zone} scale={sizeScale} />
                           )}
@@ -378,6 +403,10 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderWidth: 1.5,
   },
+  cellFootprintTarget: {
+    borderColor: 'rgba(255,77,106,0.38)',
+    backgroundColor: 'rgba(255,77,106,0.08)',
+  },
   cellDragTarget: {
     borderColor: frigi.red,
     borderWidth: 2.5,
@@ -395,6 +424,12 @@ const styles = StyleSheet.create({
     color: frigi.red,
     fontWeight: '300',
     opacity: 0.6,
+  },
+  footprintDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,77,106,0.38)',
   },
   zoneHint: {
     fontSize: 15,

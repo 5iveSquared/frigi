@@ -8,6 +8,9 @@ const GUEST_PASSWORD_KEY = 'guest_password';
 const GUEST_USERNAME_KEY = 'guest_username';
 const PLAYER_ID_KEY = 'player_id';
 
+let cachedPlayer: PlayerProfile | null = null;
+let inFlightAuth: Promise<PlayerProfile> | null = null;
+
 function buildGuestIdentity() {
   const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
   return {
@@ -18,6 +21,7 @@ function buildGuestIdentity() {
 }
 
 async function clearAuthState() {
+  cachedPlayer = null;
   await Promise.all([
     SecureStore.deleteItemAsync(AUTH_TOKEN_KEY),
     SecureStore.deleteItemAsync(PLAYER_ID_KEY),
@@ -45,6 +49,7 @@ async function persistGuestIdentity(identity: {
 }
 
 async function persistAuthenticatedPlayer(player: PlayerProfile, token: string) {
+  cachedPlayer = player;
   await Promise.all([
     SecureStore.setItemAsync(AUTH_TOKEN_KEY, token),
     SecureStore.setItemAsync(PLAYER_ID_KEY, player.id),
@@ -71,11 +76,12 @@ async function registerAndLoginGuest() {
   return loginWithCredentials(identity.email, identity.password);
 }
 
-export async function ensureAuthenticatedPlayer(): Promise<PlayerProfile> {
+async function resolveAuthenticatedPlayer(): Promise<PlayerProfile> {
   const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
   if (token) {
     try {
       const player = await playersApi.me();
+      cachedPlayer = player;
       await SecureStore.setItemAsync(PLAYER_ID_KEY, player.id);
       console.info('[frigi][auth] reuse:token', {
         playerId: player.id,
@@ -111,10 +117,26 @@ export async function ensureAuthenticatedPlayer(): Promise<PlayerProfile> {
   return registerAndLoginGuest();
 }
 
+export async function ensureAuthenticatedPlayer(): Promise<PlayerProfile> {
+  if (cachedPlayer) {
+    return cachedPlayer;
+  }
+  if (inFlightAuth) {
+    return inFlightAuth;
+  }
+
+  inFlightAuth = resolveAuthenticatedPlayer().finally(() => {
+    inFlightAuth = null;
+  });
+  return inFlightAuth;
+}
+
 export async function signOut(): Promise<void> {
+  cachedPlayer = null;
   await clearAuthState();
 }
 
 export async function resetGuestIdentity(): Promise<void> {
+  cachedPlayer = null;
   await Promise.all([clearAuthState(), clearGuestIdentity()]);
 }

@@ -42,6 +42,12 @@ function formatDifficulty(difficulty?: number | null) {
   return 'Expert';
 }
 
+function formatRunLabel(level?: { isDaily?: boolean; progressionIndex?: number } | null) {
+  if (level?.isDaily) return 'Daily Challenge';
+  if (level?.progressionIndex != null) return `Level ${level.progressionIndex}`;
+  return 'Level';
+}
+
 export function ScoreHUD() {
   const moveCount  = useGameStore((s) => s.moveCount);
   const grid       = useGameStore((s) => s.grid);
@@ -81,6 +87,17 @@ export function ScoreHUD() {
       </View>
 
       <View style={styles.metaRow}>
+        <View style={[styles.metaPill, styles.metaPillHighlight, level?.isDaily && styles.metaPillDailyDark]}>
+          <Text
+            style={[
+              styles.metaPillText,
+              styles.metaPillHighlightText,
+              level?.isDaily && styles.metaPillTextDaily,
+            ]}
+          >
+            {formatRunLabel(level)}
+          </Text>
+        </View>
         <View style={[styles.metaPill, level?.isDaily && styles.metaPillDailyDark]}>
           <Text style={[styles.metaPillText, level?.isDaily && styles.metaPillTextDaily]}>
             {formatTheme(level?.theme)}
@@ -91,11 +108,6 @@ export function ScoreHUD() {
             {formatDifficulty(level?.difficulty)}
           </Text>
         </View>
-        {level?.isDaily ? (
-          <View style={[styles.metaPill, styles.metaPillDaily, styles.metaPillDailyDark]}>
-            <Text style={[styles.metaPillText, styles.metaPillDailyText]}>Daily</Text>
-          </View>
-        ) : null}
       </View>
 
       <View style={[styles.barTrack, level?.isDaily && styles.barTrackDaily]}>
@@ -214,6 +226,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: frigi.border,
   },
+  metaPillHighlight: {
+    backgroundColor: '#FFF1F4',
+    borderColor: '#FBC7D2',
+  },
   metaPillDailyDark: {
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderColor: 'rgba(148,194,232,0.16)',
@@ -227,6 +243,9 @@ const styles = StyleSheet.create({
     color: frigi.textLight,
     letterSpacing: 0.4,
     fontWeight: '700',
+  },
+  metaPillHighlightText: {
+    color: frigi.red,
   },
   metaPillTextDaily: {
     color: polar.textPrimary,

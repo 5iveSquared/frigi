@@ -17,3 +17,12 @@ def test_move_score():
     assert max(0, 200 - 0 * 2) == 200
     assert max(0, 200 - 100 * 2) == 0
     assert max(0, 200 - 50 * 2) == 100
+
+
+def test_star_rating_uses_score_ratio_against_optimal():
+    service = ScoringService(db=None)
+
+    assert service._star_rating(total_score=790, optimal_score=1000) == 1
+    assert service._star_rating(total_score=800, optimal_score=1000) == 2
+    assert service._star_rating(total_score=919, optimal_score=1000) == 2
+    assert service._star_rating(total_score=920, optimal_score=1000) == 3

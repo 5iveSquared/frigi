@@ -12,7 +12,7 @@ import type { Level } from '@frigi/shared';
 
 export default function HomeScreen() {
   const [completedLevels, setCompletedLevels] = useState(0);
-  const [currentLevel, setCurrentLevel] = useState<number | null>(null);
+  const [currentLevel, setCurrentLevel] = useState(1);
   const [totalStars, setTotalStars] = useState(0);
   const [progress, setProgress] = useState<PlayerProgressSummary | null>(null);
   const [dailyLevel, setDailyLevel] = useState<Level | null>(null);
@@ -20,6 +20,7 @@ export default function HomeScreen() {
   const activeLevel = useGameStore((s) => s.level);
   const activeGrid = useGameStore((s) => s.grid);
   const activeGameComplete = useGameStore((s) => s.isComplete);
+  const activeCampaignInProgress = !!activeLevel && !activeLevel.isDaily && !!activeGrid && !activeGameComplete;
   const activeDailyInProgress = !!activeLevel?.isDaily && !!activeGrid && !activeGameComplete;
 
   const loadProgress = useCallback(() => {
@@ -72,11 +73,8 @@ export default function HomeScreen() {
   );
 
   const handlePlay = () => {
-    if (activeLevel && activeGrid && !activeGameComplete) {
+    if (activeCampaignInProgress && activeLevel) {
       router.push(`/game/${activeLevel.id}`);
-      return;
-    }
-    if (isProgressLoading || currentLevel === null) {
       return;
     }
     router.push('/game/loading');
@@ -93,7 +91,7 @@ export default function HomeScreen() {
   const dailySummary = progress?.daily ?? null;
   const dailyComplete = !!dailySummary?.isCompleted;
   const dailyButtonText = activeDailyInProgress
-    ? 'Resume'
+    ? 'Resume Run'
     : dailyComplete
       ? null
       : dailySummary?.hasAttempt
@@ -111,7 +109,10 @@ export default function HomeScreen() {
 
   return (
     <SafeScreen style={styles.screen}>
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.topRow}>
           <View style={styles.coinPill}>
             <View style={styles.coinIcon}>
@@ -151,17 +152,17 @@ export default function HomeScreen() {
           </View>
 
           <Pressable
-            style={[styles.playButton, isProgressLoading && !activeLevel && styles.playButtonDisabled]}
+            style={styles.playButton}
             onPress={handlePlay}
           >
             <View style={styles.playIcon}>
               <View style={styles.playTriangle} />
             </View>
             <Text style={styles.playButtonText}>
-              {activeLevel && activeGrid && !activeGameComplete
+              {activeCampaignInProgress
                 ? 'Resume Game'
-                : isProgressLoading || currentLevel === null
-                  ? 'Loading Level...'
+                : isProgressLoading
+                  ? `Play Level ${currentLevel}`
                   : `Play Level ${currentLevel}`}
             </Text>
           </Pressable>
@@ -281,15 +282,15 @@ export default function HomeScreen() {
           ) : null}
         </View>
 
-        <Text style={styles.version}>Frigi v1.0.0</Text>
-      </View>
+        <Text style={styles.version}>Frigi v1.0.1</Text>
+      </ScrollView>
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: frigi.bg },
-  container: { flex: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 20 },
+  container: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 28 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   coinPill: {
     flexDirection: 'row',
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
     color: frigi.text,
     fontFamily: Platform.select({ ios: 'AvenirNext-DemiBold', android: 'sans-serif-medium' }),
   },
-  levelRow: { gap: 12, paddingVertical: 16, paddingRight: 12 },
+  levelRow: { gap: 12, paddingTop: 16, paddingRight: 12, paddingBottom: 24 },
   levelCard: {
     width: 70,
     height: 78,
@@ -560,9 +561,6 @@ const styles = StyleSheet.create({
     backgroundColor: frigi.surface,
     borderRadius: 18,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: '#FFE3C4',
     shadowColor: frigi.shadow,
@@ -572,11 +570,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   challengeBody: {
-    flex: 1,
-    paddingRight: 12,
+    width: '100%',
   },
   challengeBodyCompleted: {
-    paddingRight: 0,
     alignItems: 'center',
   },
   challengeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -643,6 +639,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   challengeButton: {
+    alignSelf: 'flex-end',
+    marginTop: 12,
     backgroundColor: frigi.orange,
     paddingHorizontal: 16,
     paddingVertical: 8,

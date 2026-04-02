@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class ScoringService:
+    TWO_STAR_MIN_RATIO = 0.80
+    THREE_STAR_MIN_RATIO = 0.92
+
     def __init__(self, db: AsyncSession):
         self.db = db
         self.difficulty_engine = DifficultyEngine()
@@ -189,7 +192,7 @@ class ScoringService:
         )
         progress = result.scalar_one_or_none()
 
-        stars = 3 if efficiency_pct >= 0.85 else 2 if efficiency_pct >= 0.65 else 1
+        stars = self._star_rating(total_score, level.optimal_score)
         if progress is None:
             progress = PlayerLevelProgress(
                 id=str(uuid.uuid4()),
@@ -219,3 +222,13 @@ class ScoringService:
         if progress.first_completed_at is None:
             progress.first_completed_at = completed_at
         progress.last_completed_at = completed_at
+
+    def _star_rating(self, total_score: int, optimal_score: int | None) -> int:
+        if not optimal_score or optimal_score <= 0:
+            return 1
+        ratio = min(total_score / optimal_score, 1.0)
+        if ratio >= self.THREE_STAR_MIN_RATIO:
+            return 3
+        if ratio >= self.TWO_STAR_MIN_RATIO:
+            return 2
+        return 1

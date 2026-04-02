@@ -35,9 +35,8 @@ function getDropHitPoint(point: { x: number; y: number }) {
 export default function GameScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const level = useGameStore((s) => s.level);
-  const grid        = useGameStore((s) => s.grid);
-  const unplaced    = useGameStore((s) => s.unplacedItems);
-  const showSolution = useGameStore((s) => s.showSolution);
+  const grid = useGameStore((s) => s.grid);
+  const unplaced = useGameStore((s) => s.unplacedItems);
   const activeItem = useGameStore((s) => s.activeItem);
   const activeRotation = useGameStore((s) => s.activeRotation);
   const setActiveItem = useGameStore((s) => s.setActiveItem);
@@ -115,22 +114,6 @@ export default function GameScreen() {
 
       {/* HUD */}
       <ScoreHUD />
-
-      {__DEV__ && (
-        <View style={styles.devPanel}>
-          <View style={styles.devBadge}>
-            <Text style={styles.devBadgeText} numberOfLines={1}>
-              {`Level ID: ${level?.id ?? 'unknown'}`}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => showSolution()}
-            style={styles.devButton}
-          >
-            <Text style={styles.devButtonText}>Show Solution</Text>
-          </Pressable>
-        </View>
-      )}
 
       {/* Grid — flex fill */}
       <FridgeGrid dragTargetCell={dragTargetCell} onGridMeasure={setGridFrame} />
@@ -234,50 +217,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 2,
-  },
-  devButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#111827',
-    shadowColor: '#000000',
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-  devPanel: {
-    position: 'absolute',
-    top: 52,
-    right: 16,
-    zIndex: 10,
-    alignItems: 'flex-end',
-    gap: 8,
-    maxWidth: 220,
-  },
-  devBadge: {
-    maxWidth: 220,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: '#1F2937',
-    shadowColor: '#000000',
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-  devBadgeText: {
-    color: '#E5E7EB',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  devButtonText: {
-    color: '#F9FAFB',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
   },
   dragOverlay: {
     ...StyleSheet.absoluteFillObject,

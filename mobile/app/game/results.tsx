@@ -17,12 +17,23 @@ import { ensureAuthenticatedPlayer } from '~/api/auth';
 import { playersApi, type PlayerProgressSummary } from '~/api/players';
 import { frigi, polar } from '~/utils/colors';
 
+const TWO_STAR_MIN_RATIO = 0.8;
+const THREE_STAR_MIN_RATIO = 0.92;
+
+function starRating(totalScore?: number | null, optimalScore?: number | null) {
+  if (!totalScore || !optimalScore || optimalScore <= 0) return 0;
+  const ratio = Math.min(totalScore / optimalScore, 1);
+  if (ratio >= THREE_STAR_MIN_RATIO) return 3;
+  if (ratio >= TWO_STAR_MIN_RATIO) return 2;
+  return 1;
+}
+
 export default function ResultsScreen() {
   const score = useGameStore((s) => s.score);
   const level = useGameStore((s) => s.level);
   const moveCount = useGameStore((s) => s.moveCount);
   const isDaily = !!level?.isDaily;
-  const stars = score ? (score.efficiencyPct >= 0.85 ? 3 : score.efficiencyPct >= 0.65 ? 2 : 1) : 0;
+  const stars = starRating(score?.total, level?.optimalScore);
   const coins = score ? Math.max(50, Math.round(score.total / 20)) : 0;
   const [progress, setProgress] = useState<PlayerProgressSummary | null>(null);
   const pulse = useRef(new Animated.Value(1)).current;
