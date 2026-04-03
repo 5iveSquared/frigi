@@ -3,6 +3,8 @@ import { useGameStore } from '~/store/gameStore';
 import { frigi, polar } from '~/utils/colors';
 import { rotateShape } from '~/engine/rotation';
 import { getFoodEmoji } from '~/utils/foodEmoji';
+import { playSoundEffectAsync } from '~/utils/soundEffects';
+import { useHaptics } from '~/utils/haptics';
 import type { Item } from '@frigi/shared';
 
 interface ItemTrayProps {
@@ -26,6 +28,19 @@ export function ItemTray({
   const rotateActive   = useGameStore((s) => s.rotateActive);
   const level = useGameStore((s) => s.level);
   const isDaily = !!level?.isDaily;
+  const haptics = useHaptics();
+
+  const handleRotate = () => {
+    rotateActive();
+    haptics.light();
+    void playSoundEffectAsync('tap');
+  };
+
+  const handleSelectItem = (item: Item, isActive: boolean) => {
+    setActiveItem(isActive ? null : item);
+    haptics.light();
+    void playSoundEffectAsync('tap');
+  };
 
   const placed = placedItems.length;
   const total  = unplacedItems.length + placed;
@@ -45,7 +60,7 @@ export function ItemTray({
       {activeItem && (
         <View style={[styles.rotateBar, isDaily && styles.rotateBarDaily]}>
           <Text style={[styles.rotateLabel, isDaily && styles.rotateLabelDaily]}>Rotation</Text>
-          <Pressable onPress={rotateActive} style={[styles.rotateButton, isDaily && styles.rotateButtonDaily]}>
+          <Pressable onPress={handleRotate} style={[styles.rotateButton, isDaily && styles.rotateButtonDaily]}>
             <Text style={styles.rotateText}>↻ {activeRotation}°</Text>
           </Pressable>
         </View>
@@ -95,7 +110,7 @@ export function ItemTray({
           return (
             <View key={item.id} {...dragResponder.panHandlers}>
               <Pressable
-                onPress={() => setActiveItem(isActive ? null : item)}
+                onPress={() => handleSelectItem(item, isActive)}
                 disabled={isDragging}
                 style={({ pressed }) => [
                   styles.card,

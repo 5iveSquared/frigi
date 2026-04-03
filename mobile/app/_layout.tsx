@@ -3,18 +3,11 @@ import { Slot, SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import * as Notifications from 'expo-notifications';
-import { configureNotificationsAsync } from '~/utils/notifications';
+import { configureNotificationsAsync, getNotificationStatusAsync } from '~/utils/notifications';
+import { preloadSoundEffectsAsync } from '~/utils/soundEffects';
+import { useSettingsStore } from '~/store/settingsStore';
 
 SplashScreen.preventAutoHideAsync();
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,8 +20,25 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   useEffect(() => {
+    useSettingsStore.getState().hydrateSettings().catch((error) => {
+      console.warn('Failed to hydrate settings', error);
+    });
+    if (!useSettingsStore.getState().notificationsPreferenceSet) {
+      getNotificationStatusAsync()
+        .then((status) => {
+          if (!useSettingsStore.getState().notificationsPreferenceSet) {
+            useSettingsStore.getState().setNotificationsEnabled(status === 'enabled');
+          }
+        })
+        .catch((error) => {
+          console.warn('Failed to sync notification settings', error);
+        });
+    }
     configureNotificationsAsync().catch((error) => {
       console.warn('Failed to configure notifications', error);
+    });
+    preloadSoundEffectsAsync().catch((error) => {
+      console.warn('Failed to preload sound effects', error);
     });
     SplashScreen.hideAsync();
   }, []);

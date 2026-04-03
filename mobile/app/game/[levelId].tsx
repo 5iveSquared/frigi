@@ -8,6 +8,8 @@ import { ScoreHUD } from '~/components/game/ScoreHUD';
 import { useGameStore } from '~/store/gameStore';
 import { useScoreSubmit } from '~/hooks/useScoreSubmit';
 import { frigi } from '~/utils/colors';
+import { playSoundEffectAsync } from '~/utils/soundEffects';
+import { useHaptics } from '~/utils/haptics';
 import type { Item } from '@frigi/shared';
 import { getFoodEmoji } from '~/utils/foodEmoji';
 import {
@@ -44,6 +46,7 @@ export default function GameScreen() {
   const { submit }  = useScoreSubmit();
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [gridFrame, setGridFrame] = useState<GridFrame | null>(null);
+  const haptics = useHaptics();
 
   if (!grid) return null;
   const isDaily = !!level?.isDaily;
@@ -71,6 +74,8 @@ export default function GameScreen() {
       unplacedItems: unplaced.length,
       hasGrid: !!grid,
     });
+    haptics.success();
+    void playSoundEffectAsync('success');
     await submit();
     console.info('[frigi][complete] finish:navigate-results');
     router.replace('/game/results');
@@ -80,6 +85,8 @@ export default function GameScreen() {
     if (activeItem?.id !== item.id) {
       setActiveItem(item);
     }
+    haptics.light();
+    void playSoundEffectAsync('tap');
     setDragState({ item, x: point.x, y: point.y });
   };
 
@@ -98,10 +105,17 @@ export default function GameScreen() {
         grid.rows,
         grid.cols,
         fridgeMetrics
-      );
+    );
     setDragState(null);
     if (targetCell) {
-      placeActiveItem(targetCell.row, targetCell.col, activeRotation);
+      const placed = placeActiveItem(targetCell.row, targetCell.col, activeRotation);
+      if (placed) {
+        haptics.medium();
+        void playSoundEffectAsync('success');
+      } else {
+        haptics.error();
+        void playSoundEffectAsync('error');
+      }
     }
   };
 

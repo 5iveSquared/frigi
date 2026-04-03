@@ -172,6 +172,12 @@ Default deploy target:
 
 The script reads values from `backend/.env` and deploys the backend container.
 
+Production mobile builds use the Cloud Run backend at:
+
+- `https://frigi-api-dquezahola-uc.a.run.app`
+
+This URL is pinned in `mobile/eas.json` for `preview` and `production` builds so App Store/TestFlight builds do not fall back to localhost when `EXPO_PUBLIC_API_URL` is not injected externally.
+
 ## Notes
 
 - `mobile/ios/` and `mobile/android/` are intentionally ignored because Expo prebuild can regenerate them.

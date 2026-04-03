@@ -1,59 +1,84 @@
 import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import * as Notifications from 'expo-notifications';
 import { ensureAuthenticatedPlayer, resetGuestIdentity, signOut } from '~/api/auth';
 import { SafeScreen } from '~/components/layout/SafeScreen';
 import { Toggle } from '~/components/ui/Toggle';
+import { useSettingsStore } from '~/store/settingsStore';
 import {
+  disableNotificationsAsync,
+  getNotificationStatusAsync,
+  getNotificationSupportReason,
+  type NotificationStatus,
   requestNotificationPermissionsAsync,
-  scheduleTestNotificationAsync,
 } from '~/utils/notifications';
 import { frigi } from '~/utils/colors';
+import { playSoundEffectAsync } from '~/utils/soundEffects';
+import { useHaptics } from '~/utils/haptics';
 
 export default function SettingsScreen() {
-  const [sound, setSound] = useState(true);
-  const [haptics, setHaptics] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const sound = useSettingsStore((s) => s.soundEnabled);
+  const hapticsEnabled = useSettingsStore((s) => s.hapticsEnabled);
+  const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
+  const notificationsPreferenceSet = useSettingsStore((s) => s.notificationsPreferenceSet);
+  const theme = useSettingsStore((s) => s.theme);
+  const setSoundEnabled = useSettingsStore((s) => s.setSoundEnabled);
+  const setHapticsEnabled = useSettingsStore((s) => s.setHapticsEnabled);
+  const setNotificationsEnabled = useSettingsStore((s) => s.setNotificationsEnabled);
+  const setTheme = useSettingsStore((s) => s.setTheme);
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [notificationStatus, setNotificationStatus] = useState<'unknown' | 'disabled' | 'enabled'>('unknown');
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus | 'unknown'>('unknown');
+  const haptics = useHaptics();
+  const notificationSupportReason = getNotificationSupportReason();
+
+  const darkMode = theme === 'dark';
 
   useEffect(() => {
     let cancelled = false;
 
     const loadPreferences = async () => {
-      const [savedSound, savedHaptics, savedDarkMode, player, permissions] = await Promise.all([
-        SecureStore.getItemAsync('pref_sound'),
-        SecureStore.getItemAsync('pref_haptics'),
-        SecureStore.getItemAsync('pref_dark_mode'),
+      const [player, notificationState] = await Promise.all([
         ensureAuthenticatedPlayer(),
-        Notifications.getPermissionsAsync(),
+        getNotificationStatusAsync(),
       ]);
 
       if (cancelled) return;
-      if (savedSound !== null) setSound(savedSound === 'true');
-      if (savedHaptics !== null) setHaptics(savedHaptics === 'true');
-      if (savedDarkMode !== null) setDarkMode(savedDarkMode === 'true');
       setUsername(player.username);
       setEmail(player.email);
-      setNotificationStatus(
-        permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
-          ? 'enabled'
-          : 'disabled',
-      );
+      setNotificationStatus(notificationState);
+
+      if (!notificationsPreferenceSet && notificationState !== 'unsupported') {
+        setNotificationsEnabled(notificationState === 'enabled');
+      }
     };
 
     loadPreferences();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [notificationsPreferenceSet, setNotificationsEnabled]);
 
-  const updatePreference = async (key: string, value: boolean, setter: (next: boolean) => void) => {
-    setter(value);
-    await SecureStore.setItemAsync(key, String(value));
+  const handleSoundToggle = (next: boolean) => {
+    setSoundEnabled(next);
+    haptics.light();
+    if (next) {
+      void playSoundEffectAsync('tap');
+    }
+  };
+
+  const handleHapticsToggle = (next: boolean) => {
+    setHapticsEnabled(next);
+    if (next) {
+      haptics.light();
+    }
+    void playSoundEffectAsync('tap');
+  };
+
+  const handleDarkModeToggle = (next: boolean) => {
+    setTheme(next ? 'dark' : 'system');
+    haptics.light();
+    void playSoundEffectAsync('tap');
   };
 
   const handleSignOut = async () => {
@@ -66,30 +91,49 @@ export default function SettingsScreen() {
     router.replace('/(tabs)/home');
   };
 
-  const handleEnableNotifications = async () => {
-    const permissions = await requestNotificationPermissionsAsync();
-    setNotificationStatus(
-      permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
-        ? 'enabled'
-        : 'disabled',
-    );
+  const handleNotificationToggle = async (next: boolean) => {
+    if (notificationSupportReason) {
+      setNotificationsEnabled(false);
+      setNotificationStatus('unsupported');
+      return;
+    }
+
+    if (!next) {
+      setNotificationsEnabled(false);
+      setNotificationStatus('disabled');
+      haptics.light();
+      void playSoundEffectAsync('tap');
+      await disableNotificationsAsync();
+      return;
+    }
+
+    const nextStatus = await requestNotificationPermissionsAsync();
+    setNotificationStatus(nextStatus);
+    setNotificationsEnabled(nextStatus === 'enabled');
+
+    if (nextStatus === 'enabled') {
+      haptics.success();
+      void playSoundEffectAsync('success');
+    } else if (nextStatus === 'disabled') {
+      haptics.error();
+      void playSoundEffectAsync('error');
+    } else {
+      setNotificationsEnabled(false);
+    }
   };
 
-  const handleSendTestNotification = async () => {
-    const permissions = await requestNotificationPermissionsAsync();
-    const enabled =
-      permissions.granted || permissions.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
-    setNotificationStatus(enabled ? 'enabled' : 'disabled');
-    if (!enabled) return;
-    await scheduleTestNotificationAsync();
-  };
-
-  const notificationLabel =
-    notificationStatus === 'enabled'
-      ? 'Enabled'
-      : notificationStatus === 'disabled'
-        ? 'Disabled'
-        : 'Unknown';
+  const notificationHint =
+    notificationStatus === 'unknown'
+      ? 'Checking device permission'
+      : notificationStatus === 'unsupported'
+        ? notificationSupportReason ?? 'Notifications are unavailable in this runtime'
+      : notificationsEnabled && notificationStatus === 'enabled'
+        ? 'Frigi alerts are enabled on this device'
+        : notificationsEnabled
+          ? 'Allow notifications in system settings to receive alerts'
+          : notificationStatus === 'enabled'
+            ? 'Paused in Frigi'
+            : 'Notifications are off';
 
   return (
     <SafeScreen>
@@ -115,7 +159,7 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.rowLabel}>Sound Effects</Text>
             </View>
-            <Toggle checked={sound} onChange={(next) => updatePreference('pref_sound', next, setSound)} />
+            <Toggle checked={sound} onChange={handleSoundToggle} />
           </View>
 
           <View style={styles.divider} />
@@ -127,7 +171,7 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.rowLabel}>Haptics</Text>
             </View>
-            <Toggle checked={haptics} onChange={(next) => updatePreference('pref_haptics', next, setHaptics)} />
+            <Toggle checked={hapticsEnabled} onChange={handleHapticsToggle} />
           </View>
 
           <View style={styles.divider} />
@@ -142,39 +186,28 @@ export default function SettingsScreen() {
                 <Text style={styles.rowHint}>Saved now, applied later</Text>
               </View>
             </View>
-            <Toggle checked={darkMode} onChange={(next) => updatePreference('pref_dark_mode', next, setDarkMode)} />
+            <Toggle checked={darkMode} onChange={handleDarkModeToggle} />
           </View>
         </View>
 
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
-          <Pressable style={styles.rowButton} onPress={handleEnableNotifications}>
+          <View style={styles.row}>
             <View style={styles.rowLeft}>
               <View style={[styles.iconBubble, styles.iconMint]}>
                 <Text style={styles.iconText}>🔔</Text>
               </View>
               <View>
                 <Text style={styles.rowLabel}>Enable Notifications</Text>
-                <Text style={styles.rowHint}>Current status: {notificationLabel}</Text>
+                <Text style={styles.rowHint}>{notificationHint}</Text>
               </View>
             </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-
-          <View style={styles.divider} />
-
-          <Pressable style={styles.rowButton} onPress={handleSendTestNotification}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconBubble, styles.iconOrange]}>
-                <Text style={styles.iconText}>🧪</Text>
-              </View>
-              <View>
-                <Text style={styles.rowLabel}>Send Test Notification</Text>
-                <Text style={styles.rowHint}>Schedules a local test in 2 seconds</Text>
-              </View>
-            </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
+            <Toggle
+              checked={notificationsEnabled}
+              disabled={notificationStatus === 'unsupported'}
+              onChange={handleNotificationToggle}
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionLabel}>Progression</Text>

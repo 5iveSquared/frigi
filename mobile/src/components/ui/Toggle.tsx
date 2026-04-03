@@ -3,12 +3,17 @@ import { frigi } from '~/utils/colors';
 
 interface Props {
   checked: boolean;
+  disabled?: boolean;
   onChange: (next: boolean) => void;
 }
 
-export function Toggle({ checked, onChange }: Props) {
+export function Toggle({ checked, disabled = false, onChange }: Props) {
   return (
-    <Pressable onPress={() => onChange(!checked)} style={styles.pressable}>
+    <Pressable
+      disabled={disabled}
+      onPress={() => onChange(!checked)}
+      style={[styles.pressable, disabled && styles.pressableDisabled]}
+    >
       <View style={[styles.track, checked && styles.trackOn]}>
         <View style={[styles.thumb, checked && styles.thumbOn]} />
       </View>
@@ -18,6 +23,7 @@ export function Toggle({ checked, onChange }: Props) {
 
 const styles = StyleSheet.create({
   pressable: { paddingVertical: 2 },
+  pressableDisabled: { opacity: 0.45 },
   track: {
     width: 46,
     height: 26,

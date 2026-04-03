@@ -6,6 +6,8 @@ import { getOccupiedCells, rotateShape } from '~/engine/rotation';
 import type { PlacedItem } from '@frigi/shared';
 import { frigi, frigiZones, polar } from '~/utils/colors';
 import { getFoodEmoji } from '~/utils/foodEmoji';
+import { playSoundEffectAsync } from '~/utils/soundEffects';
+import { useHaptics } from '~/utils/haptics';
 import type { CellZone } from '@frigi/shared';
 import {
   CELL_GAP,
@@ -42,6 +44,7 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
   const level = useGameStore((s) => s.level);
   const gridRef = useRef<View>(null);
   const isDaily = !!level?.isDaily;
+  const haptics = useHaptics();
   const metrics = useMemo(
     () => getFridgeMetrics(windowWidth, grid?.cols ?? 4),
     [windowWidth, grid?.cols]
@@ -143,10 +146,20 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
                         <Pressable
                           key={`${r}-${c}`}
                           onPress={() => {
-                            if (canTarget) placeActive(r, c, activeRotation);
+                            if (!canTarget) return;
+
+                            const placed = placeActive(r, c, activeRotation);
+                            if (placed) {
+                              haptics.medium();
+                              void playSoundEffectAsync('success');
+                            }
                           }}
                           onLongPress={() => {
-                            if (cell.occupied && cell.itemId) removePlaced(cell.itemId);
+                            if (cell.occupied && cell.itemId) {
+                              removePlaced(cell.itemId);
+                              haptics.light();
+                              void playSoundEffectAsync('tap');
+                            }
                           }}
                           delayLongPress={250}
                           style={({ pressed }) => [

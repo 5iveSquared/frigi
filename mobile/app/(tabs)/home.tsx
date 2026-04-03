@@ -10,6 +10,13 @@ import { useGameStore } from '~/store/gameStore';
 import { frigi } from '~/utils/colors';
 import type { Level } from '@frigi/shared';
 
+const COMPLETED_FOOD_ICONS = ['🍓', '🥦', '🧀', '🥛', '🥕', '🍋'] as const;
+
+function getCompletedFoodIcon(levelId: string) {
+  const seed = levelId.split('').reduce((total, char) => total + char.charCodeAt(0), 0);
+  return COMPLETED_FOOD_ICONS[seed % COMPLETED_FOOD_ICONS.length];
+}
+
 export default function HomeScreen() {
   const [completedLevels, setCompletedLevels] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -201,9 +208,14 @@ export default function HomeScreen() {
                 ]}
               >
                 {isCompleted ? (
-                  <View style={styles.checkMark}>
-                    <View style={styles.checkStem} />
-                    <View style={styles.checkKick} />
+                  <View style={styles.completedBadge}>
+                    <View style={styles.completedFoodBubble}>
+                      <Text style={styles.completedFoodIcon}>{getCompletedFoodIcon(level.id)}</Text>
+                    </View>
+                    <View style={styles.checkMark}>
+                      <View style={styles.checkStem} />
+                      <View style={styles.checkKick} />
+                    </View>
                   </View>
                 ) : isLocked ? (
                   <Text style={styles.lockIcon}>🔒</Text>
@@ -481,6 +493,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 78,
     borderRadius: 18,
+    overflow: 'hidden',
     backgroundColor: frigi.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -492,6 +505,25 @@ const styles = StyleSheet.create({
   },
   levelCardDone: {
     backgroundColor: frigi.red,
+  },
+  completedBadge: {
+    width: 70,
+    height: 78,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedFoodBubble: {
+    position: 'absolute',
+    width: 70,
+    height: 78,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedFoodIcon: {
+    fontSize: 52,
+    opacity: 0.8,
   },
   levelCardCurrent: {
     borderWidth: 3,
