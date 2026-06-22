@@ -5,17 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db.session import engine
-from app.db.redis import get_redis_pool
 from app.routers import health, players, levels, sessions, scores
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    app.state.redis = await get_redis_pool()
     yield
-    # Shutdown
-    await app.state.redis.aclose()
     await engine.dispose()
 
 

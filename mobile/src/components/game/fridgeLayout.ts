@@ -1,8 +1,8 @@
-export const CELL_SIZE = 58;
+export const CELL_SIZE = 64;
 export const CELL_GAP = 3;
-export const SHELF_HEIGHT = 8;
-export const GRID_INNER_PAD = 14;
-export const DOOR_WIDTH = 92;
+export const SHELF_HEIGHT = 10;
+export const GRID_INNER_PAD = 12;
+export const DOOR_WIDTH = 78;
 
 export interface FridgeMetrics {
   cellSize: number;
@@ -28,8 +28,8 @@ export interface GridCellTarget {
 export function getFridgeMetrics(screenWidth: number, cols: number): FridgeMetrics {
   const baseGridWidth = cols * CELL_SIZE + (cols - 1) * CELL_GAP;
   const baseApplianceWidth = baseGridWidth + GRID_INNER_PAD * 2 + DOOR_WIDTH;
-  const maxApplianceWidth = Math.max(300, screenWidth - 24);
-  const scale = Math.max(0.78, Math.min(1, maxApplianceWidth / baseApplianceWidth));
+  const maxApplianceWidth = Math.max(300, screenWidth - 8);
+  const scale = Math.max(0.78, Math.min(1.12, maxApplianceWidth / baseApplianceWidth));
 
   return {
     cellSize: Math.round(CELL_SIZE * scale),

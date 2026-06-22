@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frigi — Screen Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F0F2F5; padding: 32px; }
+  h1 { font-size: 24px; font-weight: 800; color: #1F2937; margin-bottom: 4px; }
+  .meta { font-size: 13px; color: #6B7280; margin-bottom: 40px; }
+  h2 { font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 1.2px; text-transform: uppercase; margin: 32px 0 12px; }
+  .screens { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .screen-label { font-size: 11px; font-weight: 700; color: #6B7280; }
+
+  /* PHONE FRAME */
+  .phone { width: 200px; border-radius: 32px; border: 7px solid #1F2937; background: #fff; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.18); }
+  .phone.dark { background: #0A1628; border-color: #0D2040; }
+  .notch { width: 100px; height: 24px; background: #1F2937; border-radius: 0 0 16px 16px; margin: 0 auto; }
+  .phone.dark .notch { background: #060E1A; }
+  .screen { padding: 14px 16px 16px; }
+
+  /* FRIGI COLORS */
+  .bg-red { background: #FF4D6A; }
+  .bg-orange { background: #FF9F43; }
+  .bg-mint { background: #6EE7B7; }
+  .bg-surface { background: #fff; }
+  .frigi-bg { background: #F8FAFC; }
+  .c-red { color: #FF4D6A; }
+  .c-orange { color: #FF9F43; }
+  .c-mint { color: #10B981; }
+  .c-text { color: #1F2937; }
+  .c-muted { color: #6B7280; }
+  .c-light { color: #9CA3AF; }
+  .border { border: 1px solid #E5E7EB; }
+
+  /* LAYOUT UTILS */
+  .row { display: flex; align-items: center; gap: 6px; }
+  .between { display: flex; align-items: center; justify-content: space-between; }
+  .center { text-align: center; }
+  .card { background: #fff; border-radius: 14px; border: 1px solid #E5E7EB; padding: 12px; }
+
+  /* FRIDGE MINI ILLUSTRATION */
+  .fridge-box { width: 64px; height: 78px; border-radius: 16px; background: #fff; border: 2px solid #E5E7EB; padding: 6px; margin: 0 auto; }
+  .f-row { display: flex; gap: 4px; margin-bottom: 4px; }
+  .f-item { width: 9px; height: 9px; border-radius: 3px; }
+
+  /* LEVEL CARDS */
+  .lv-row { display: flex; gap: 7px; overflow: hidden; }
+  .lv { width: 50px; height: 58px; border-radius: 14px; background: #fff; border: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #FF4D6A; flex-shrink: 0; }
+  .lv.done { background: #FF4D6A; color: #fff; }
+  .lv.locked { background: #E5E7EB; color: #9CA3AF; }
+  .lv.current { border: 2.5px solid #FF4D6A; }
+
+  /* GAME GRID */
+  .fridge-grid { display: grid; gap: 2px; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+  .grid-cell { height: 24px; border: 1px solid rgba(148,194,232,0.2); display: flex; align-items: center; justify-content: center; font-size: 9px; }
+  .zone-std    { background: rgba(214,237,255,0.82); }
+  .zone-cold   { background: rgba(125,211,252,0.45); }
+  .zone-frozen { background: rgba(167,139,250,0.40); }
+  .zone-shelf  { background: rgba(253,224,134,0.45); }
+
+  /* HUD */
+  .hud { background: rgba(10,22,40,0.96); border: 1px solid rgba(100,160,210,0.15); border-radius: 12px; padding: 7px 12px; margin-bottom: 8px; display: flex; justify-content: space-around; }
+  .hud-val { color: #E2F4FF; font-size: 12px; font-weight: 700; }
+  .hud-lbl { color: #94C5E8; font-size: 8px; font-weight: 700; letter-spacing: .5px; }
+
+  /* ITEM TRAY */
+  .tray { background: #07101E; border-top: 1px solid rgba(100,160,210,0.12); padding: 8px; }
+  .tray-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 5px 7px; font-size: 9px; color: #E2F4FF; text-align: center; }
+  .tray-item.active { border-color: #10B981; background: rgba(16,185,129,0.15); }
+
+  /* STARS */
+  .star-row { display: flex; gap: 4px; justify-content: center; }
+  .star { width: 16px; height: 16px; clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+  .star.on { background: #FF9F43; }
+  .star.off { background: #E5E7EB; }
+
+  /* LEADERBOARD */
+  .lb-row { display: flex; align-items: center; gap: 7px; padding: 9px; background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 5px; }
+  .rank-bubble { width: 28px; height: 28px; border-radius: 14px; background: #FFF1F4; color: #FF4D6A; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* SETTINGS */
+  .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #E5E7EB; }
+  .setting-row:last-child { border-bottom: none; }
+  .toggle { width: 32px; height: 18px; background: #10B981; border-radius: 9px; position: relative; flex-shrink: 0; }
+  .toggle.off { background: #D1D5DB; }
+  .toggle::after { content: ''; width: 14px; height: 14px; background: #fff; border-radius: 7px; position: absolute; top: 2px; right: 2px; }
+  .toggle.off::after { right: auto; left: 2px; }
+  .icon-bubble { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+
+  /* BTN */
+  .btn { border-radius: 16px; padding: 9px 18px; font-size: 12px; font-weight: 700; text-align: center; cursor: default; }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #111827; }
+    h1 { color: #F9FAFB; }
+    .meta { color: #6B7280; }
+    h2 { color: #4B5563; }
+    .screen-label { color: #4B5563; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Frigi — Screen Mockups</h1>
+<p class="meta">v1.0.1 · All screens · Light &amp; dark variants</p>
+
+<!-- ─── HOME ─── -->
+<h2>Home</h2>
+<div class="screens">
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg">
+        <!-- Top row -->
+        <div class="between" style="margin-bottom:12px">
+          <div class="row" style="background:#fff;border:1px solid #E5E7EB;border-radius:20px;padding:5px 10px;gap:5px">
+            <div style="width:14px;height:14px;border-radius:7px;background:#FFCF4A;display:flex;align-items:center;justify-content:center">
+              <div style="width:7px;height:7px;border-radius:3px;background:#FFE69C"></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#1F2937">14 Stars</span>
+          </div>
+          <div style="width:30px;height:30px;border-radius:15px;background:#fff;border:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center">
+            <div style="width:14px;height:14px;border-radius:7px;border:2px solid #9CA3AF;display:flex;align-items:center;justify-content:center">
+              <div style="width:5px;height:5px;border-radius:2px;background:#9CA3AF"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Hero fridge + title -->
+        <div style="text-align:center;margin-bottom:12px">
+          <div class="fridge-box" style="margin-bottom:10px">
+            <div class="f-row"><div class="f-item" style="background:#9FD6FF"></div><div class="f-item" style="background:#D3EEFF"></div></div>
+            <div class="f-row"><div class="f-item" style="background:#FFB3C1"></div><div class="f-item" style="background:#FFD79A"></div><div class="f-item" style="background:#FBE7C6"></div></div>
+            <div class="row" style="gap:5px;margin-top:4px"><div style="width:10px;height:6px;border-radius:4px;background:#FFE8B2"></div><div style="width:12px;height:6px;border-radius:4px;background:#9EE8B8"></div></div>
+          </div>
+          <div style="font-size:32px;font-weight:800;color:#1F2937;line-height:1">Frigi</div>
+          <div style="width:32px;height:5px;border-radius:4px;background:rgba(110,231,183,0.4);margin:5px auto 12px"></div>
+          <div class="btn bg-red" style="color:#fff;border-radius:22px;padding:10px 22px;font-size:12px;display:inline-flex;align-items:center;gap:7px">
+            <div style="width:16px;height:16px;border-radius:8px;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center">
+              <div style="width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:8px solid #fff;margin-left:1px"></div>
+            </div>
+            Play Level 3
+          </div>
+          <div style="margin-top:8px">
+            <span style="font-size:10px;font-weight:700;color:#FF4D6A;background:#FFF1F4;padding:4px 12px;border-radius:999px">How to Play</span>
+          </div>
+        </div>
+        <!-- Level strip -->
+        <div style="font-size:12px;font-weight:700;color:#1F2937;margin-bottom:6px">Levels</div>
+        <div class="lv-row" style="margin-bottom:12px">
+          <div class="lv done" style="font-size:20px">🍓</div>
+          <div class="lv done" style="font-size:20px">🥦</div>
+          <div class="lv current">3</div>
+          <div class="lv locked">🔒</div>
+          <div class="lv locked">🔒</div>
+        </div>
+        <!-- Daily challenge -->
+        <div style="background:#fff;border-radius:16px;border:1px solid #FFE3C4;padding:12px">
+          <div class="between" style="margin-bottom:5px">
+            <div class="row" style="gap:6px">
+              <div style="width:16px;height:16px;border-radius:8px;background:#FFE1B8"></div>
+              <span style="font-size:11px;font-weight:700;color:#1F2937">Daily Challenge</span>
+            </div>
+            <span style="font-size:9px;font-weight:800;color:#FF9F43;background:#FFF3E3;padding:3px 7px;border-radius:999px">Ready</span>
+          </div>
+          <div style="font-size:10px;color:#9CA3AF;margin-bottom:8px">kitchen challenge · 55% difficulty</div>
+          <div style="text-align:right">
+            <span style="background:#FF9F43;color:#fff;font-size:10px;font-weight:700;padding:6px 14px;border-radius:12px;display:inline-block">Play</span>
+          </div>
+        </div>
+        <div style="margin-top:14px;text-align:center;font-size:10px;color:#9CA3AF">Frigi v1.0.1</div>
+      </div>
+    </div>
+    <div class="screen-label">Home</div>
+  </div>
+</div>
+
+<!-- ─── GAME LOADING ─── -->
+<h2>Game Loading</h2>
+<div class="screens">
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg" style="min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+        <div style="width:70px;height:70px;border-radius:50%;border:4px solid #FF4D6A;border-top-color:transparent"></div>
+        <div style="font-size:12px;color:#6B7280;text-align:center">Generating your level…</div>
+      </div>
+    </div>
+    <div class="screen-label">Loading — campaign</div>
+  </div>
+  <div class="screen-wrap">
+    <div class="phone dark">
+      <div class="notch"></div>
+      <div class="screen" style="background:#060E1A;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+        <div style="width:70px;height:70px;border-radius:50%;border:4px solid #10B981;border-top-color:transparent"></div>
+        <div style="font-size:12px;color:#6BA3CC;text-align:center">Loading today's daily fridge…</div>
+      </div>
+    </div>
+    <div class="screen-label">Loading — daily</div>
+  </div>
+</div>
+
+<!-- ─── GAME SCREEN ─── -->
+<h2>Game Screen</h2>
+<div class="screens">
+  <!-- Campaign -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen" style="background:#F8FAFC;padding:10px">
+        <!-- Back btn -->
+        <div style="width:28px;height:28px;border-radius:14px;background:#fff;border:1px solid #E5E7EB;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6B7280;margin-bottom:6px">←</div>
+        <!-- Score HUD -->
+        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:7px 12px;margin-bottom:8px;display:flex;justify-content:space-around">
+          <div style="text-align:center"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:14px;font-weight:800;color:#1F2937">1,240</div></div>
+          <div style="text-align:center"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:14px;font-weight:800;color:#10B981">1:42</div></div>
+          <div style="text-align:center"><div style="font-size:8px;color:#9CA3AF;font-weight:700">MOVES</div><div style="font-size:14px;font-weight:800;color:#1F2937">8</div></div>
+        </div>
+        <!-- Fridge grid 4x5 -->
+        <div class="fridge-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">
+          <div class="grid-cell zone-shelf"></div><div class="grid-cell zone-shelf"></div><div class="grid-cell zone-shelf">🧈</div><div class="grid-cell zone-shelf"></div>
+          <div class="grid-cell zone-std">🥛</div><div class="grid-cell zone-std">🥛</div><div class="grid-cell zone-cold"></div><div class="grid-cell zone-cold"></div>
+          <div class="grid-cell zone-std">🥛</div><div class="grid-cell zone-std"></div><div class="grid-cell zone-cold">🧀</div><div class="grid-cell zone-cold">🧀</div>
+          <div class="grid-cell zone-std"></div><div class="grid-cell zone-std"></div><div class="grid-cell zone-cold"></div><div class="grid-cell zone-cold"></div>
+          <div class="grid-cell zone-frozen"></div><div class="grid-cell zone-frozen">🫛</div><div class="grid-cell zone-frozen">🫛</div><div class="grid-cell zone-frozen">🫛</div>
+        </div>
+        <!-- Item tray -->
+        <div style="background:#fff;border-top:1px solid #E5E7EB;padding:8px;margin:0 -10px -16px;border-radius:0 0 26px 26px">
+          <div style="display:flex;gap:7px">
+            <div style="background:#fff;border:2px solid #FF4D6A;border-radius:12px;padding:6px 8px;text-align:center;min-width:50px">
+              <div style="font-size:16px">🥕</div>
+              <div style="font-size:9px;font-weight:700;color:#FF4D6A">Carrot</div>
+            </div>
+            <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:6px 8px;text-align:center;min-width:50px;opacity:.55">
+              <div style="font-size:16px">🫐</div>
+              <div style="font-size:9px;font-weight:700;color:#6B7280">Berries</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Game — campaign</div>
+  </div>
+
+  <!-- Daily dark -->
+  <div class="screen-wrap">
+    <div class="phone dark">
+      <div class="notch"></div>
+      <div class="screen" style="background:#060E1A;padding:10px">
+        <div style="width:28px;height:28px;border-radius:14px;background:#10233E;border:1px solid rgba(148,194,232,0.18);display:flex;align-items:center;justify-content:center;font-size:13px;color:#E2F4FF;margin-bottom:6px">←</div>
+        <div class="hud">
+          <div style="text-align:center"><div class="hud-lbl">SCORE</div><div class="hud-val">2,180</div></div>
+          <div style="text-align:center"><div class="hud-lbl">TIME</div><div style="color:#10B981;font-size:12px;font-weight:700">2:04</div></div>
+          <div style="text-align:center"><div class="hud-lbl">MOVES</div><div class="hud-val">11</div></div>
+        </div>
+        <div class="fridge-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="grid-cell zone-shelf"></div><div class="grid-cell zone-shelf">🧈</div><div class="grid-cell zone-shelf"></div><div class="grid-cell zone-shelf"></div>
+          <div class="grid-cell zone-std">🥛</div><div class="grid-cell zone-std">🥛</div><div class="grid-cell zone-cold">🧃</div><div class="grid-cell zone-cold"></div>
+          <div class="grid-cell zone-std">🥛</div><div class="grid-cell zone-std"></div><div class="grid-cell zone-cold"></div><div class="grid-cell zone-cold"></div>
+          <div class="grid-cell zone-std"></div><div class="grid-cell zone-std"></div><div class="grid-cell zone-cold">🫙</div><div class="grid-cell zone-cold">🫙</div>
+          <div class="grid-cell zone-frozen">🫛</div><div class="grid-cell zone-frozen">🫛</div><div class="grid-cell zone-frozen">🫛</div><div class="grid-cell zone-frozen"></div>
+        </div>
+        <div class="tray" style="margin:0 -10px -16px;border-radius:0 0 26px 26px">
+          <div style="display:flex;gap:6px">
+            <div class="tray-item active" style="flex:1">🥚<div style="font-size:8px;margin-top:2px">Eggs</div></div>
+            <div class="tray-item" style="flex:1;opacity:.55">🫐<div style="font-size:8px;margin-top:2px">Berries</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Game — daily</div>
+  </div>
+</div>
+
+<!-- ─── RESULTS ─── -->
+<h2>Results</h2>
+<div class="screens">
+  <!-- Campaign results -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen bg-red" style="padding:14px;text-align:center">
+        <div style="color:#fff;font-size:22px;font-weight:900;margin-bottom:3px">Perfect!</div>
+        <div style="color:rgba(255,255,255,0.7);font-size:10px;margin-bottom:12px">Fridge packed flawlessly</div>
+        <!-- Fridge illustration -->
+        <div style="width:100px;height:128px;border-radius:18px;background:#F3F4F6;border:3px solid #D1D5DB;padding:6px;margin:0 auto 12px">
+          <div style="height:30px;border-radius:10px;background:#fff;border:1px solid #E5E7EB;display:flex;align-items:center;justify-content:space-around;margin-bottom:5px">
+            <div style="width:12px;height:12px;border-radius:3px;background:#DBEAFE"></div>
+            <div style="width:18px;height:10px;border-radius:4px;background:#E9D5FF"></div>
+            <div style="width:12px;height:12px;border-radius:3px;background:#DBEAFE"></div>
+          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:5px;display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;gap:4px;border-bottom:1px solid #EEF2F7;padding-bottom:3px">
+              <div style="width:12px;height:18px;border-radius:3px;background:#DBEAFE"></div>
+              <div style="width:16px;height:12px;border-radius:3px;background:#FDE68A"></div>
+              <div style="width:10px;height:14px;border-radius:3px;background:#FCD34D"></div>
+            </div>
+            <div style="display:flex;gap:4px;border-bottom:1px solid #EEF2F7;padding-bottom:3px">
+              <div style="width:22px;height:12px;border-radius:3px;background:#CCFBF1"></div>
+              <div style="width:12px;height:12px;border-radius:3px;background:#FBCFE8"></div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <div style="flex:1;height:12px;border-radius:6px;background:#BBF7D0"></div>
+              <div style="flex:1;height:12px;border-radius:6px;background:#FCA5A5"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Score card -->
+        <div style="background:#fff;border-radius:16px;padding:12px;margin-bottom:10px">
+          <div style="background:#FF9F43;border-radius:10px;padding:4px 12px;font-size:10px;font-weight:800;color:#fff;display:inline-block;margin-bottom:10px">Level 3 Complete</div>
+          <div class="star-row" style="margin-bottom:10px">
+            <div class="star on"></div><div class="star on"></div><div class="star on"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1;background:#F8FAFC;border-radius:12px;padding:7px;text-align:center">
+              <div style="font-size:9px;color:#9CA3AF;font-weight:700">SCORE</div>
+              <div style="font-size:16px;font-weight:800;color:#FF4D6A">1,840</div>
+            </div>
+            <div style="flex:1;background:#F8FAFC;border-radius:12px;padding:7px;text-align:center">
+              <div style="font-size:9px;color:#9CA3AF;font-weight:700">TIME BONUS</div>
+              <div style="font-size:16px;font-weight:800;color:#6EE7B7">+240</div>
+            </div>
+          </div>
+          <div style="background:#FFF7ED;border-radius:12px;padding:6px;font-size:11px;font-weight:700;color:#FF9F43;text-align:center">🪙 +92 Coins</div>
+        </div>
+        <!-- Actions -->
+        <div style="background:#fff;border-radius:16px;padding:12px;margin-bottom:8px;font-size:12px;font-weight:800;color:#FF4D6A;text-align:center">Next Level</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:rgba(255,255,255,0.2);border-radius:14px;padding:9px;text-align:center;font-size:11px;font-weight:700;color:#fff">Retry</div>
+          <div style="flex:1;background:rgba(255,255,255,0.2);border-radius:14px;padding:9px;text-align:center;font-size:11px;font-weight:700;color:#fff">Share</div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Results — campaign</div>
+  </div>
+
+  <!-- Daily results -->
+  <div class="screen-wrap">
+    <div class="phone dark">
+      <div class="notch"></div>
+      <div class="screen" style="background:#0A1628;padding:14px;text-align:center">
+        <div style="color:#E2F4FF;font-size:20px;font-weight:900;margin-bottom:3px">Daily Cleared</div>
+        <div style="color:#6BA3CC;font-size:10px;margin-bottom:12px">Today's shared fridge is packed.</div>
+        <div style="width:100px;height:128px;border-radius:18px;background:#DDEAFE;border:3px solid #B3D3F4;padding:6px;margin:0 auto 12px">
+          <div style="height:30px;border-radius:10px;background:#fff;border:1px solid #E5E7EB;display:flex;align-items:center;justify-content:space-around;margin-bottom:5px">
+            <div style="width:12px;height:12px;border-radius:3px;background:#DBEAFE"></div>
+            <div style="width:18px;height:10px;border-radius:4px;background:#E9D5FF"></div>
+            <div style="width:12px;height:12px;border-radius:3px;background:#DBEAFE"></div>
+          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:5px;display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;gap:4px;border-bottom:1px solid #EEF2F7;padding-bottom:3px">
+              <div style="width:12px;height:18px;border-radius:3px;background:#DBEAFE"></div>
+              <div style="width:16px;height:12px;border-radius:3px;background:#FDE68A"></div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <div style="flex:1;height:12px;border-radius:6px;background:#BBF7D0"></div>
+              <div style="flex:1;height:12px;border-radius:6px;background:#FCA5A5"></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#0E2440;border:1px solid #183353;border-radius:16px;padding:12px;margin-bottom:10px">
+          <div style="background:rgba(16,185,129,0.18);border-radius:10px;padding:4px 10px;font-size:10px;font-weight:800;color:#10B981;display:inline-block;margin-bottom:10px">Daily Challenge Complete</div>
+          <div class="star-row" style="margin-bottom:10px">
+            <div class="star on"></div><div class="star on"></div><div class="star off"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:12px;padding:7px;text-align:center">
+              <div style="font-size:9px;color:#94C5E8;font-weight:700">SCORE</div>
+              <div style="font-size:16px;font-weight:800;color:#E2F4FF">2,180</div>
+            </div>
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:12px;padding:7px;text-align:center">
+              <div style="font-size:9px;color:#94C5E8;font-weight:700">TIME BONUS</div>
+              <div style="font-size:16px;font-weight:800;color:#10B981">+310</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#10B981;border-radius:16px;padding:11px;font-size:12px;font-weight:700;color:#052E2B;margin-bottom:8px">Back Home</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:rgba(255,255,255,0.08);border-radius:14px;padding:9px;text-align:center;font-size:11px;font-weight:700;color:#fff">Replay</div>
+          <div style="flex:1;background:rgba(255,255,255,0.08);border-radius:14px;padding:9px;text-align:center;font-size:11px;font-weight:700;color:#fff">Share</div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Results — daily</div>
+  </div>
+</div>
+
+<!-- ─── LEADERBOARD ─── -->
+<h2>Leaderboard</h2>
+<div class="screens">
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg">
+        <div style="font-size:18px;font-weight:800;color:#1F2937;margin-bottom:3px">Leaderboard</div>
+        <div style="font-size:10px;color:#9CA3AF;margin-bottom:12px">Today's shared fridge</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="background:#FFF1F4;border:1px solid #FBC7D2;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;color:#FF4D6A">Daily</div>
+          <div style="background:#fff;border:1px solid #E5E7EB;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;color:#6B7280">Campaign</div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:#1F2937;margin-bottom:8px">Daily Challenge</div>
+        <div class="lb-row">
+          <div class="rank-bubble">1</div>
+          <div style="flex:1;font-size:11px;font-weight:700;color:#1F2937">frigipro_99</div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:11px;font-weight:800;color:#1F2937">3,240</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:11px;font-weight:800;color:#1F2937">1:12</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="rank-bubble" style="background:#FFF7ED;color:#FF9F43">2</div>
+          <div style="flex:1"><div style="font-size:11px;font-weight:700;color:#1F2937">you</div><div style="font-size:9px;color:#9CA3AF">your best</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:11px;font-weight:800;color:#1F2937">2,180</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:11px;font-weight:800;color:#1F2937">2:04</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="rank-bubble" style="background:#F3F4F6;color:#6B7280">3</div>
+          <div style="flex:1;font-size:11px;font-weight:700;color:#1F2937">packer_42</div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:11px;font-weight:800;color:#1F2937">1,950</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:11px;font-weight:800;color:#1F2937">2:31</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Leaderboard — daily tab</div>
+  </div>
+
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg">
+        <div style="font-size:18px;font-weight:800;color:#1F2937;margin-bottom:3px">Leaderboard</div>
+        <div style="font-size:10px;color:#9CA3AF;margin-bottom:12px">Best runs for each campaign level</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="background:#fff;border:1px solid #E5E7EB;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;color:#6B7280">Daily</div>
+          <div style="background:#FFF1F4;border:1px solid #FBC7D2;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;color:#FF4D6A">Campaign</div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:#1F2937;margin-bottom:8px">Level 2</div>
+        <div class="lb-row">
+          <div class="rank-bubble">1</div>
+          <div style="flex:1;font-size:11px;font-weight:700;color:#1F2937">you</div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:11px;font-weight:800;color:#1F2937">1,640</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:11px;font-weight:800;color:#1F2937">1:58</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="rank-bubble" style="background:#FFF7ED;color:#FF9F43">2</div>
+          <div style="flex:1;font-size:11px;font-weight:700;color:#1F2937">fridgemaster</div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:11px;font-weight:800;color:#1F2937">1,420</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:11px;font-weight:800;color:#1F2937">2:22</div></div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:#1F2937;margin:10px 0 8px">Level 3</div>
+        <div class="lb-row">
+          <div class="rank-bubble">1</div>
+          <div style="flex:1;font-size:11px;font-weight:700;color:#1F2937">you</div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">SCORE</div><div style="font-size:11px;font-weight:800;color:#1F2937">1,840</div></div>
+          <div style="text-align:right"><div style="font-size:8px;color:#9CA3AF;font-weight:700">TIME</div><div style="font-size:11px;font-weight:800;color:#1F2937">1:42</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Leaderboard — campaign tab</div>
+  </div>
+</div>
+
+<!-- ─── SETTINGS ─── -->
+<h2>Settings</h2>
+<div class="screens">
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg" style="padding:14px">
+        <div style="font-size:18px;font-weight:800;color:#1F2937;margin-bottom:10px">Settings</div>
+        <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:5px">Account</div>
+        <div class="card" style="margin-bottom:10px">
+          <div style="font-size:13px;font-weight:800;color:#1F2937">Guest_7f3a</div>
+          <div style="font-size:10px;color:#9CA3AF;margin-top:2px">guest@frigi.local</div>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:5px">Preferences</div>
+        <div class="card" style="padding:0 12px;margin-bottom:10px">
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#FFE5EA">🔊</div><span style="font-size:11px;font-weight:600;color:#1F2937">Sound Effects</span></div>
+            <div class="toggle"></div>
+          </div>
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#E6FFF3">📳</div><span style="font-size:11px;font-weight:600;color:#1F2937">Haptics</span></div>
+            <div class="toggle"></div>
+          </div>
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#F3F4F6">🌙</div>
+              <div><div style="font-size:11px;font-weight:600;color:#1F2937">Dark Mode</div><div style="font-size:9px;color:#9CA3AF;margin-top:1px">Saved now, applied later</div></div>
+            </div>
+            <div class="toggle off"></div>
+          </div>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:5px">Support</div>
+        <div class="card" style="padding:0 12px">
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#FFF1E3">❓</div><span style="font-size:11px;font-weight:600;color:#1F2937">How to Play</span></div>
+            <span style="color:#9CA3AF;font-size:16px">›</span>
+          </div>
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#FFE5EA">✉️</div><span style="font-size:11px;font-weight:600;color:#1F2937">Contact Support</span></div>
+            <span style="color:#9CA3AF;font-size:16px">›</span>
+          </div>
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#F3F4F6">🔐</div><span style="font-size:11px;font-weight:600;color:#1F2937">Privacy Policy</span></div>
+            <span style="color:#9CA3AF;font-size:16px">›</span>
+          </div>
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#F3F4F6">📄</div><span style="font-size:11px;font-weight:600;color:#1F2937">Terms of Use</span></div>
+            <span style="color:#9CA3AF;font-size:16px">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Settings</div>
+  </div>
+
+  <!-- Settings — account actions -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg" style="padding:14px">
+        <div style="font-size:18px;font-weight:800;color:#1F2937;margin-bottom:10px">Settings</div>
+        <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:5px">Notifications</div>
+        <div class="card" style="padding:0 12px;margin-bottom:10px">
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#E6FFF3">🔔</div>
+              <div><div style="font-size:11px;font-weight:600;color:#1F2937">Enable Notifications</div><div style="font-size:9px;color:#9CA3AF;margin-top:1px">Frigi alerts are enabled</div></div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:5px">Progression</div>
+        <div class="card" style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:700;color:#1F2937;margin-bottom:4px">Adaptive Levels</div>
+          <div style="font-size:10px;color:#6B7280;line-height:1.5">Frigi increases difficulty gradually after each completed run instead of jumping straight to hard layouts.</div>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:#9CA3AF;letter-spacing:1.1px;text-transform:uppercase;margin-bottom:5px">Account Actions</div>
+        <div class="card" style="padding:0 12px;margin-bottom:12px">
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#FFF1E3">↩️</div><span style="font-size:11px;font-weight:600;color:#1F2937">Sign Out Session</span></div>
+            <span style="color:#9CA3AF;font-size:16px">›</span>
+          </div>
+          <div class="setting-row">
+            <div class="row" style="gap:7px"><div class="icon-bubble" style="background:#FFE5EA">🧹</div>
+              <div><div style="font-size:11px;font-weight:600;color:#1F2937">Start Fresh Guest</div><div style="font-size:9px;color:#9CA3AF;margin-top:1px">Clears local guest credentials</div></div>
+            </div>
+            <span style="color:#9CA3AF;font-size:16px">›</span>
+          </div>
+        </div>
+        <div style="border:1px solid #FBC7D2;background:#FFF1F4;border-radius:16px;padding:11px;text-align:center;font-size:12px;font-weight:700;color:#FF4D6A">Review the Tutorial</div>
+      </div>
+    </div>
+    <div class="screen-label">Settings — continued</div>
+  </div>
+</div>
+
+<!-- ─── HOW TO PLAY (stub) ─── -->
+<h2>How to Play</h2>
+<div class="screens">
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg" style="padding:14px">
+        <div style="font-size:18px;font-weight:800;color:#1F2937;margin-bottom:4px">How to Play</div>
+        <div style="font-size:10px;color:#9CA3AF;margin-bottom:14px">Pack the fridge, score big.</div>
+        <div class="card" style="margin-bottom:10px">
+          <div style="font-size:20px;margin-bottom:6px">🧊</div>
+          <div style="font-size:12px;font-weight:700;color:#1F2937;margin-bottom:4px">Drag items into the fridge</div>
+          <div style="font-size:10px;color:#6B7280;line-height:1.5">Drag food items from the tray onto the grid. Tap to rotate before placing.</div>
+        </div>
+        <div class="card" style="margin-bottom:10px">
+          <div style="font-size:20px;margin-bottom:6px">🌡️</div>
+          <div style="font-size:12px;font-weight:700;color:#1F2937;margin-bottom:4px">Respect the zones</div>
+          <div style="font-size:10px;color:#6B7280;line-height:1.5">Cold items belong in the cold zone. Frozen items go in the freezer row. Shelf items at the top.</div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <div style="background:rgba(253,224,134,0.6);border-radius:6px;padding:4px 8px;font-size:9px;font-weight:700;color:#92400E">Shelf</div>
+            <div style="background:rgba(125,211,252,0.5);border-radius:6px;padding:4px 8px;font-size:9px;font-weight:700;color:#1E40AF">Cold</div>
+            <div style="background:rgba(167,139,250,0.5);border-radius:6px;padding:4px 8px;font-size:9px;font-weight:700;color:#5B21B6">Frozen</div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:20px;margin-bottom:6px">⭐</div>
+          <div style="font-size:12px;font-weight:700;color:#1F2937;margin-bottom:4px">Score 3 stars</div>
+          <div style="font-size:10px;color:#6B7280;line-height:1.5">Place all items to unlock Submit. Your score depends on placement accuracy, zone bonuses, and speed.</div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">How to Play</div>
+  </div>
+</div>
+
+<!-- ─── AUTH (stubs) ─── -->
+<h2>Auth (stubs — not yet built)</h2>
+<div class="screens">
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg" style="padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;gap:14px">
+        <div style="font-size:28px;font-weight:800;color:#1F2937">Sign In</div>
+        <div style="width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;font-size:12px;color:#9CA3AF">Username or email</div>
+        <div style="width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;font-size:12px;color:#9CA3AF">Password</div>
+        <div style="width:100%;background:#FF4D6A;border-radius:14px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#fff">Sign In</div>
+        <div style="font-size:11px;color:#6B7280">Don't have an account? <span style="color:#FF4D6A;font-weight:700">Sign Up</span></div>
+      </div>
+    </div>
+    <div class="screen-label">Sign In (stub)</div>
+  </div>
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen frigi-bg" style="padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;gap:12px">
+        <div style="font-size:28px;font-weight:800;color:#1F2937">Sign Up</div>
+        <div style="width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;font-size:12px;color:#9CA3AF">Username</div>
+        <div style="width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;font-size:12px;color:#9CA3AF">Email</div>
+        <div style="width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;font-size:12px;color:#9CA3AF">Password</div>
+        <div style="width:100%;background:#FF4D6A;border-radius:14px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#fff">Create Account</div>
+        <div style="font-size:11px;color:#6B7280">Already have one? <span style="color:#FF4D6A;font-weight:700">Sign In</span></div>
+      </div>
+    </div>
+    <div class="screen-label">Sign Up (stub)</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.content.global_level import GLOBAL_LEVEL_ID, build_global_level_payload
+from app.content.item_catalog import ITEM_CATALOG, build_catalog_item, normalize_known_item
 from app.models.level import Level
 from app.models.player import Player
 from app.models.player_difficulty_history import PlayerDifficultyHistory
@@ -265,8 +266,10 @@ class LevelGeneratorService:
         seen_item_ids: set[str] = set()
         seen_item_names: set[str] = set()
         for item in level_data.get("items", []):
-            item_id = self._normalize_item_id(item)
-            item_name = self._normalize_item_name(item)
+            normalized_known_item = normalize_known_item(item)
+            source_item = normalized_known_item or item
+            item_id = self._normalize_item_id(source_item)
+            item_name = self._normalize_item_name(source_item)
             item_name_key = self._normalize_item_key(item_name)
             if item_id in seen_item_ids or item_name_key in seen_item_names:
                 continue
@@ -274,10 +277,10 @@ class LevelGeneratorService:
                 {
                     "id": item_id,
                     "name": item_name,
-                    "shape": item["shape"],
-                    "zoneRequirement": item.get("zoneRequirement", item.get("zone_requirement")),
-                    "points": item["points"],
-                    "color": item["color"],
+                    "shape": source_item["shape"],
+                    "zoneRequirement": source_item.get("zoneRequirement", source_item.get("zone_requirement")),
+                    "points": source_item["points"],
+                    "color": source_item["color"],
                 }
             )
             seen_item_ids.add(item_id)
@@ -327,6 +330,8 @@ class LevelGeneratorService:
             (0.26, {"rows": 5, "cols": 4, "item_count": 5, "fill_ratio": 0.5}),
             (0.48, {"rows": 5, "cols": 5, "item_count": 6, "fill_ratio": 0.57}),
             (0.68, {"rows": 6, "cols": 5, "item_count": 7, "fill_ratio": 0.64}),
+            (0.84, {"rows": 6, "cols": 6, "item_count": 8, "fill_ratio": 0.68}),
+            (0.9, {"rows": 7, "cols": 6, "item_count": 9, "fill_ratio": 0.7}),
         ]
         config = layouts[0][1]
         for threshold, candidate in layouts:
@@ -337,16 +342,8 @@ class LevelGeneratorService:
         cols = config["cols"]
         grid_area = rows * cols
         full_item_catalog = [
-            {"id": "milk", "name": "Milk", "shape": [[1], [1], [1]], "zoneRequirement": "cold", "points": 30, "color": "#FAFAFA"},
-            {"id": "cheese", "name": "Cheese", "shape": [[1, 1], [1, 0]], "zoneRequirement": None, "points": 20, "color": "#F59E0B"},
-            {"id": "broccoli", "name": "Broccoli", "shape": [[0, 1], [1, 1]], "zoneRequirement": None, "points": 25, "color": "#16A34A"},
-            {"id": "butter", "name": "Butter", "shape": [[1, 1]], "zoneRequirement": "shelf", "points": 15, "color": "#FCD34D"},
-            {"id": "yogurt", "name": "Yogurt", "shape": [[1, 1], [1, 1]], "zoneRequirement": "cold", "points": 20, "color": "#BAE6FD"},
-            {"id": "carrot", "name": "Carrot", "shape": [[1], [1]], "zoneRequirement": None, "points": 10, "color": "#F97316"},
-            {"id": "peas", "name": "Peas", "shape": [[1, 1, 1]], "zoneRequirement": "frozen", "points": 18, "color": "#34D399"},
-            {"id": "juice", "name": "Juice", "shape": [[1], [1]], "zoneRequirement": "cold", "points": 14, "color": "#FBBF24"},
-            {"id": "eggs", "name": "Eggs", "shape": [[1, 1], [1, 1]], "zoneRequirement": "shelf", "points": 22, "color": "#FDE68A"},
-            {"id": "berries", "name": "Berries", "shape": [[1, 1, 0], [0, 1, 1]], "zoneRequirement": "cold", "points": 28, "color": "#FB7185"},
+            build_catalog_item(key, variant_index=rng.randrange(len(definition["shape_variants"])))
+            for key, definition in ITEM_CATALOG.items()
         ]
         grid = self._build_grid(rows, cols)
         minimum_placements = self._minimum_valid_placements(difficulty)
