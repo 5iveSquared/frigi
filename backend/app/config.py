@@ -7,7 +7,6 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://frigi:frigi_dev@localhost:5433/frigi"
     db_schema: str = "frigi"
-    redis_url: str = "redis://localhost:6379/0"
     openai_api_key: str = ""
     openai_timeout_seconds: float = 12.0
     secret_key: str = "dev-secret-key"

@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.session import async_session_factory
-from app.db.redis import get_redis_pool
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -20,11 +19,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
-
-
-async def get_redis():
-    pool = await get_redis_pool()
-    return pool
 
 
 async def get_current_player(

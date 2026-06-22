@@ -37,7 +37,6 @@ for line in Path("backend/.env").read_text().splitlines():
 deploy_env = {
     "DATABASE_URL": env["DATABASE_URL"],
     "DB_SCHEMA": env.get("DB_SCHEMA", "frigi"),
-    "REDIS_URL": env.get("REDIS_URL", "redis://localhost:6379/0"),
     "SECRET_KEY": env["SECRET_KEY"],
     "ACCESS_TOKEN_EXPIRE_MINUTES": env.get("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"),
     "DEBUG": "false",
@@ -95,6 +94,7 @@ DEPLOY_ARGS=(
   --service-account="${RUNTIME_SERVICE_ACCOUNT}"
   --image="${IMAGE}"
   --port=8080
+  --min-instances=0
 )
 
 if [[ "${USE_SECRET_MANAGER_LC}" == "true" || "${USE_SECRET_MANAGER}" == "1" ]]; then
@@ -106,7 +106,7 @@ if [[ "${USE_SECRET_MANAGER_LC}" == "true" || "${USE_SECRET_MANAGER}" == "1" ]];
   if [[ "${INCLUDE_OPENAI_API_KEY_LC}" == "true" || "${INCLUDE_OPENAI_API_KEY}" == "1" ]]; then
     DEPLOY_ARGS+=(--update-secrets=OPENAI_API_KEY=frigi-openai-api-key:latest)
   fi
-  DEPLOY_ARGS+=(--set-env-vars=DB_SCHEMA=frigi,REDIS_URL=redis://localhost:6379/0,ACCESS_TOKEN_EXPIRE_MINUTES=10080,DEBUG=false,LOG_LEVEL=info)
+  DEPLOY_ARGS+=(--set-env-vars=DB_SCHEMA=frigi,ACCESS_TOKEN_EXPIRE_MINUTES=10080,DEBUG=false,LOG_LEVEL=info)
 else
   DEPLOY_ARGS+=(
     --remove-secrets=DATABASE_URL,SECRET_KEY,OPENAI_API_KEY

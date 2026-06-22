@@ -4,7 +4,7 @@ import { useSessionStore } from '~/store/sessionStore';
 import { ensureAuthenticatedPlayer } from '~/api/auth';
 import { levelsApi } from '~/api/levels';
 import { sessionsApi } from '~/api/sessions';
-import type { Level } from '@frigi/shared';
+import { buildCatalogItem, type Level } from '@frigi/shared';
 
 const DEMO_LEVEL: Level = {
   id: 'demo-level-01',
@@ -34,54 +34,12 @@ const DEMO_LEVEL: Level = {
     ),
   },
   items: [
-    {
-      id: 'milk',
-      name: 'Milk',
-      shape: [[1], [1], [1]],
-      zoneRequirement: 'cold',
-      points: 30,
-      color: '#FAFAFA',
-    },
-    {
-      id: 'cheese',
-      name: 'Cheese',
-      shape: [[1, 1], [1, 0]],
-      zoneRequirement: null,
-      points: 20,
-      color: '#F59E0B',
-    },
-    {
-      id: 'broccoli',
-      name: 'Broccoli',
-      shape: [[0, 1], [1, 1]],
-      zoneRequirement: null,
-      points: 25,
-      color: '#16A34A',
-    },
-    {
-      id: 'butter',
-      name: 'Butter',
-      shape: [[1, 1]],
-      zoneRequirement: 'shelf',
-      points: 15,
-      color: '#FCD34D',
-    },
-    {
-      id: 'yogurt',
-      name: 'Yogurt',
-      shape: [[1, 1], [1, 1]],
-      zoneRequirement: 'cold',
-      points: 20,
-      color: '#BAE6FD',
-    },
-    {
-      id: 'carrot',
-      name: 'Carrot',
-      shape: [[1], [1]],
-      zoneRequirement: null,
-      points: 10,
-      color: '#F97316',
-    },
+    buildCatalogItem('milk'),
+    buildCatalogItem('cheese'),
+    buildCatalogItem('broccoli'),
+    buildCatalogItem('butter'),
+    buildCatalogItem('yogurt'),
+    buildCatalogItem('carrot'),
   ],
 };
 

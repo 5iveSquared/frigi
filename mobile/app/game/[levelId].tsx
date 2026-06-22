@@ -17,6 +17,7 @@ import {
   getFridgeMetrics,
   type GridFrame,
 } from '~/components/game/fridgeLayout';
+import { getLevelEnvironment } from '~/components/game/levelEnvironment';
 
 interface DragState {
   item: Item;
@@ -49,7 +50,7 @@ export default function GameScreen() {
   const haptics = useHaptics();
 
   if (!grid) return null;
-  const isDaily = !!level?.isDaily;
+  const environment = getLevelEnvironment(level);
   const fridgeMetrics = getFridgeMetrics(windowWidth, grid.cols);
 
   const allPlaced   = unplaced.length === 0;
@@ -120,10 +121,20 @@ export default function GameScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.screen, isDaily && styles.screenDaily]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: environment.screenBg }]} edges={['top', 'bottom']}>
       {/* Back button */}
-      <Pressable onPress={() => router.back()} style={[styles.backBtn, isDaily && styles.backBtnDaily]}>
-        <Text style={[styles.backIcon, isDaily && styles.backIconDaily]}>←</Text>
+      <Pressable
+        onPress={() => router.back()}
+        style={[
+          styles.backBtn,
+          {
+            backgroundColor: environment.surface,
+            borderColor: environment.border,
+            shadowColor: environment.shadow,
+          },
+        ]}
+      >
+        <Text style={[styles.backIcon, { color: environment.textMuted }]}>←</Text>
       </Pressable>
 
       {/* HUD */}
@@ -134,8 +145,13 @@ export default function GameScreen() {
 
       {/* Finish button — appears when all items placed */}
       {allPlaced && (
-        <View style={[styles.finishBar, isDaily && styles.finishBarDaily]}>
-          <Pressable onPress={handleFinish} style={[styles.finishBtn, isDaily && styles.finishBtnDaily]}>
+        <View
+          style={[
+            styles.finishBar,
+            { backgroundColor: environment.surface, borderTopColor: environment.border },
+          ]}
+        >
+          <Pressable onPress={handleFinish} style={[styles.finishBtn, { backgroundColor: environment.accent }]}>
             <Text style={styles.finishText}>SUBMIT  →</Text>
           </Pressable>
         </View>
@@ -154,16 +170,16 @@ export default function GameScreen() {
           <View
             style={[
               styles.dragCard,
-              isDaily && styles.dragCardDaily,
               {
                 left: dragState.x - DRAG_PREVIEW_WIDTH / 2,
                 top: dragState.y - DRAG_PREVIEW_HEIGHT,
                 borderColor: dragState.item.color,
+                backgroundColor: environment.surface,
               },
             ]}
           >
             <Text style={styles.dragEmoji}>{getFoodEmoji(dragState.item.name)}</Text>
-            <Text style={[styles.dragName, isDaily && styles.dragNameDaily]} numberOfLines={1}>
+            <Text style={[styles.dragName, { color: environment.text }]} numberOfLines={1}>
               {dragState.item.name}
             </Text>
           </View>
@@ -178,9 +194,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: frigi.bg,
   },
-  screenDaily: {
-    backgroundColor: '#060E1A',
-  },
   backBtn: {
     position: 'absolute',
     top: 52,
@@ -194,17 +207,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: frigi.border,
-  },
-  backBtnDaily: {
-    backgroundColor: '#10233E',
-    borderColor: 'rgba(148,194,232,0.18)',
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   backIcon: {
     fontSize: 16,
     color: frigi.textMuted,
-  },
-  backIconDaily: {
-    color: '#E2F4FF',
   },
   finishBar: {
     paddingHorizontal: 24,
@@ -213,18 +223,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: frigi.border,
   },
-  finishBarDaily: {
-    backgroundColor: '#07101E',
-    borderTopColor: 'rgba(148,194,232,0.14)',
-  },
   finishBtn: {
     backgroundColor: frigi.red,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
-  },
-  finishBtnDaily: {
-    backgroundColor: '#10B981',
   },
   finishText: {
     color: '#fff',
@@ -252,10 +255,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
-  dragCardDaily: {
-    backgroundColor: 'rgba(16,35,62,0.98)',
-    borderColor: '#10B981',
-  },
   dragEmoji: {
     fontSize: 30,
     marginBottom: 4,
@@ -265,8 +264,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: frigi.text,
     textAlign: 'center',
-  },
-  dragNameDaily: {
-    color: '#E2F4FF',
   },
 });

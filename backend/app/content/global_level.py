@@ -1,3 +1,6 @@
+from app.content.item_catalog import build_catalog_item
+
+
 GLOBAL_LEVEL_ID = "global-level-001"
 
 
@@ -43,53 +46,11 @@ def build_global_level_payload() -> dict:
             "cells": cells,
         },
         "items": [
-            {
-                "id": "milk",
-                "name": "Milk",
-                "shape": [[1], [1], [1]],
-                "zoneRequirement": "cold",
-                "points": 30,
-                "color": "#FAFAFA",
-            },
-            {
-                "id": "cheese",
-                "name": "Cheese",
-                "shape": [[1, 1], [1, 0]],
-                "zoneRequirement": None,
-                "points": 20,
-                "color": "#F59E0B",
-            },
-            {
-                "id": "broccoli",
-                "name": "Broccoli",
-                "shape": [[0, 1], [1, 1]],
-                "zoneRequirement": None,
-                "points": 25,
-                "color": "#16A34A",
-            },
-            {
-                "id": "butter",
-                "name": "Butter",
-                "shape": [[1, 1]],
-                "zoneRequirement": "shelf",
-                "points": 15,
-                "color": "#FCD34D",
-            },
-            {
-                "id": "yogurt",
-                "name": "Yogurt",
-                "shape": [[1, 1], [1, 1]],
-                "zoneRequirement": "cold",
-                "points": 20,
-                "color": "#BAE6FD",
-            },
-            {
-                "id": "carrot",
-                "name": "Carrot",
-                "shape": [[1], [1]],
-                "zoneRequirement": None,
-                "points": 10,
-                "color": "#F97316",
-            },
+            build_catalog_item("milk"),
+            build_catalog_item("cheese"),
+            build_catalog_item("broccoli"),
+            build_catalog_item("butter"),
+            build_catalog_item("yogurt"),
+            build_catalog_item("carrot"),
         ],
     }

@@ -1,28 +1,16 @@
+import { findCatalogEmoji } from '@frigi/shared';
+
 const EMOJI_MAP: [string, string][] = [
-  ['juice box',  '🧃'],
   ['frozen pizza', '🍕'],
   ['ice cubes',  '🧊'],
   ['ice cube',   '🧊'],
-  ['milk',       '🥛'],
-  ['cheese',     '🧀'],
-  ['broccoli',   '🥦'],
-  ['butter',     '🧈'],
-  ['yogurt',     '🫙'],
-  ['eggs',       '🥚'],
-  ['egg',        '🥚'],
   ['apple',      '🍎'],
-  ['carrot',     '🥕'],
   ['chicken',    '🍗'],
   ['fish',       '🐟'],
   ['salmon',     '🐟'],
   ['shrimp',     '🍤'],
-  ['juice',      '🧃'],
   ['beer',       '🍺'],
   ['wine',       '🍷'],
-  ['berries',    '🫐'],
-  ['peas',       '🫛'],
-  ['berry',      '🫐'],
-  ['strawberry', '🍓'],
   ['grape',      '🍇'],
   ['lemon',      '🍋'],
   ['orange',     '🍊'],
@@ -53,6 +41,9 @@ const EMOJI_MAP: [string, string][] = [
 ];
 
 export function getFoodEmoji(name: string): string {
+  const catalogEmoji = findCatalogEmoji(name);
+  if (catalogEmoji) return catalogEmoji;
+
   const lower = name.toLowerCase();
   for (const [key, emoji] of EMOJI_MAP) {
     if (lower.includes(key)) return emoji;

@@ -1,11 +1,12 @@
 import { ScrollView, View, Text, StyleSheet, Pressable, PanResponder } from 'react-native';
 import { useGameStore } from '~/store/gameStore';
-import { frigi, polar } from '~/utils/colors';
+import { frigi } from '~/utils/colors';
 import { rotateShape } from '~/engine/rotation';
 import { getFoodEmoji } from '~/utils/foodEmoji';
 import { playSoundEffectAsync } from '~/utils/soundEffects';
 import { useHaptics } from '~/utils/haptics';
 import type { Item } from '@frigi/shared';
+import { getLevelEnvironment } from './levelEnvironment';
 
 interface ItemTrayProps {
   isDragging?: boolean;
@@ -27,7 +28,7 @@ export function ItemTray({
   const activeRotation = useGameStore((s) => s.activeRotation);
   const rotateActive   = useGameStore((s) => s.rotateActive);
   const level = useGameStore((s) => s.level);
-  const isDaily = !!level?.isDaily;
+  const environment = getLevelEnvironment(level);
   const haptics = useHaptics();
 
   const handleRotate = () => {
@@ -46,21 +47,31 @@ export function ItemTray({
   const total  = unplacedItems.length + placed;
 
   return (
-    <View style={[styles.tray, isDaily && styles.trayDaily]}>
-      <View style={[styles.header, isDaily && styles.headerDaily]}>
-        <Text style={[styles.headerLabel, isDaily && styles.headerLabelDaily]}>Groceries to Pack</Text>
+    <View
+      style={[
+        styles.tray,
+        { backgroundColor: environment.surface, borderTopColor: environment.border },
+      ]}
+    >
+      <View style={[styles.header, { borderBottomColor: environment.border }]}>
+        <Text style={[styles.headerLabel, { color: environment.textMuted }]}>Groceries</Text>
         <Text style={styles.headerCount}>
-          <Text style={[styles.countPlaced, isDaily && styles.countPlacedDaily]}>{placed}</Text>
-          <Text style={[styles.countSep, isDaily && styles.countSepDaily]}> of </Text>
-          <Text style={[styles.countTotal, isDaily && styles.countTotalDaily]}>{total}</Text>
-          <Text style={[styles.countSep, isDaily && styles.countSepDaily]}> placed</Text>
+          <Text style={[styles.countPlaced, { color: environment.accent }]}>{placed}</Text>
+          <Text style={[styles.countSep, { color: environment.textMuted }]}> of </Text>
+          <Text style={[styles.countTotal, { color: environment.text }]}>{total}</Text>
+          <Text style={[styles.countSep, { color: environment.textMuted }]}> placed</Text>
         </Text>
       </View>
 
       {activeItem && (
-        <View style={[styles.rotateBar, isDaily && styles.rotateBarDaily]}>
-          <Text style={[styles.rotateLabel, isDaily && styles.rotateLabelDaily]}>Rotation</Text>
-          <Pressable onPress={handleRotate} style={[styles.rotateButton, isDaily && styles.rotateButtonDaily]}>
+        <View
+          style={[
+            styles.rotateBar,
+            { backgroundColor: environment.surfaceAlt, borderBottomColor: environment.border },
+          ]}
+        >
+          <Text style={[styles.rotateLabel, { color: environment.textMuted }]}>Rotation</Text>
+          <Pressable onPress={handleRotate} style={[styles.rotateButton, { backgroundColor: environment.accent }]}>
             <Text style={styles.rotateText}>↻ {activeRotation}°</Text>
           </Pressable>
         </View>
@@ -76,7 +87,7 @@ export function ItemTray({
         {unplacedItems.length === 0 && (
           <View style={styles.allPlaced}>
             <Text style={styles.allPlacedEmoji}>✅</Text>
-            <Text style={styles.allPlacedText}>All packed!</Text>
+            <Text style={[styles.allPlacedText, { color: environment.accent }]}>All placed!</Text>
           </View>
         )}
 
@@ -114,15 +125,16 @@ export function ItemTray({
                 disabled={isDragging}
                 style={({ pressed }) => [
                   styles.card,
-                  isActive && styles.cardActive,
-                  isDaily && styles.cardDaily,
-                  isDaily && isActive && styles.cardActiveDaily,
+                  {
+                    backgroundColor: isActive ? environment.accentSoft : environment.surfaceAlt,
+                    borderColor: isActive ? environment.accent : environment.border,
+                  },
                   pressed && styles.cardPressed,
                 ]}
               >
                 <View style={styles.badgeRow}>
-                  <View style={styles.zoneBadge}>
-                    <Text style={styles.zoneBadgeText}>
+                  <View style={[styles.zoneBadge, { backgroundColor: environment.surface, borderColor: environment.border }]}>
+                    <Text style={[styles.zoneBadgeText, { color: environment.textMuted }]}>
                       {item.zoneRequirement === 'cold'   ? '❄ Cold' :
                        item.zoneRequirement === 'frozen' ? '🧊 Frozen' :
                        item.zoneRequirement === 'shelf'  ? '📦 Shelf' : 'Any'}
@@ -134,7 +146,7 @@ export function ItemTray({
 
                 {/* Item name */}
                 <Text
-                  style={[styles.name, isActive && styles.nameActive, isDaily && styles.nameDaily, isDaily && isActive && styles.nameActiveDaily]}
+                  style={[styles.name, { color: isActive ? environment.accent : environment.textMuted }]}
                   numberOfLines={1}
                 >
                   {item.name}
@@ -158,7 +170,7 @@ export function ItemTray({
                   ))}
                 </View>
 
-                {isActive && <View style={styles.activeRing} />}
+                {isActive && <View style={[styles.activeRing, { borderColor: environment.accent }]} />}
               </Pressable>
             </View>
           );
@@ -176,11 +188,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
-  trayDaily: {
-    backgroundColor: polar.trayBg,
-    borderTopColor: polar.trayBorder,
-  },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -189,9 +196,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: frigi.border,
-  },
-  headerDaily: {
-    borderBottomColor: polar.trayBorder,
   },
   rotateBar: {
     flexDirection: 'row',
@@ -203,10 +207,6 @@ const styles = StyleSheet.create({
     borderBottomColor: frigi.border,
     backgroundColor: '#FAFAFB',
   },
-  rotateBarDaily: {
-    borderBottomColor: polar.trayBorder,
-    backgroundColor: '#081424',
-  },
   rotateLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -214,17 +214,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  rotateLabelDaily: {
-    color: polar.textLabel,
-  },
   rotateButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     backgroundColor: frigi.text,
-  },
-  rotateButtonDaily: {
-    backgroundColor: polar.emeraldDim,
   },
   rotateText: {
     fontSize: 11,
@@ -237,16 +231,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: frigi.textMuted,
   },
-  headerLabelDaily: {
-    color: polar.textLabel,
-  },
   headerCount: { flexDirection: 'row' },
   countPlaced: { fontSize: 11, color: frigi.red, fontWeight: '700' },
-  countPlacedDaily: { color: polar.emerald },
   countSep:    { fontSize: 11, color: frigi.textLight },
-  countSepDaily: { color: polar.textSecondary },
   countTotal:  { fontSize: 11, color: frigi.textMuted, fontWeight: '600' },
-  countTotalDaily: { color: polar.textPrimary },
 
   scroll: {
     paddingHorizontal: 12,
@@ -265,18 +253,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     overflow: 'hidden',
     position: 'relative',
-  },
-  cardDaily: {
-    backgroundColor: polar.itemCardBg,
-    borderColor: polar.itemCardBorder,
-  },
-  cardActive: {
-    backgroundColor: '#FFF1F4',
-    borderColor: frigi.red,
-  },
-  cardActiveDaily: {
-    backgroundColor: polar.itemCardActive,
-    borderColor: polar.itemCardActiveBorder,
   },
   cardPressed: { opacity: 0.7 },
 
@@ -301,16 +277,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     marginBottom: 6,
   },
-  nameDaily: {
-    color: polar.textPrimary,
-  },
-  nameActive: {
-    color: frigi.red,
-  },
-  nameActiveDaily: {
-    color: polar.emerald,
-  },
-
   // Tiny footprint shape
   shapePreview: {
     gap: 2,

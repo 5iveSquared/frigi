@@ -9,3 +9,5 @@ export type { Player, PlayerStats } from './types/player';
 // Constants
 export { MAX_GRID_SIZE, MIN_GRID_SIZE, DEFAULT_GRID, ZONE_COLORS } from './constants/grid';
 export { SCORE_WEIGHTS, TIME_BONUS_CURVE, ELO_CONFIG } from './constants/scoring';
+export { GROCERY_CATALOG, buildCatalogItem, findCatalogEmoji } from './constants/items';
+export type { GroceryDefinition } from './constants/items';
