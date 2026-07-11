@@ -20,5 +20,38 @@ console.info('[frigi][api] client:init', {
 apiClient.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('auth_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  (config as any).__startedAt = Date.now();
+  console.info('[frigi][http] request', {
+    method: config.method,
+    url: `${config.baseURL ?? ''}${config.url ?? ''}`,
+    hasAuth: !!token,
+  });
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => {
+    const startedAt = (response.config as any).__startedAt;
+    console.info('[frigi][http] response', {
+      method: response.config.method,
+      url: `${response.config.baseURL ?? ''}${response.config.url ?? ''}`,
+      status: response.status,
+      durationMs: startedAt ? Date.now() - startedAt : null,
+    });
+    return response;
+  },
+  (error) => {
+    const config = error.config ?? {};
+    const startedAt = (config as any).__startedAt;
+    console.warn('[frigi][http] error', {
+      method: config.method,
+      url: `${config.baseURL ?? ''}${config.url ?? ''}`,
+      status: error.response?.status ?? null,
+      code: error.code ?? null,
+      message: error.message,
+      durationMs: startedAt ? Date.now() - startedAt : null,
+      isNetworkError: !error.response,
+    });
+    return Promise.reject(error);
+  }
+);

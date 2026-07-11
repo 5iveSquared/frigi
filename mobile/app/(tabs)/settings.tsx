@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Linking, TextInput } from 'react-native';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { ensureAuthenticatedPlayer, resetGuestIdentity, signOut } from '~/api/auth';
+import { ensureAuthenticatedPlayer, resetGuestIdentity, signOut, updateCachedPlayer } from '~/api/auth';
+import { playersApi } from '~/api/players';
 import { SafeScreen } from '~/components/layout/SafeScreen';
 import { Toggle } from '~/components/ui/Toggle';
 import { useSettingsStore } from '~/store/settingsStore';
@@ -27,7 +28,11 @@ export default function SettingsScreen() {
   const setNotificationsEnabled = useSettingsStore((s) => s.setNotificationsEnabled);
   const setTheme = useSettingsStore((s) => s.setTheme);
   const [username, setUsername] = useState<string | null>(null);
+  const [draftUsername, setDraftUsername] = useState('');
   const [email, setEmail] = useState<string | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus | 'unknown'>('unknown');
   const haptics = useHaptics();
   const notificationSupportReason = getNotificationSupportReason();
@@ -45,6 +50,7 @@ export default function SettingsScreen() {
 
       if (cancelled) return;
       setUsername(player.username);
+      setDraftUsername(player.username);
       setEmail(player.email);
       setNotificationStatus(notificationState);
 
@@ -89,6 +95,51 @@ export default function SettingsScreen() {
   const handleResetGuest = async () => {
     await resetGuestIdentity();
     router.replace('/(tabs)/home');
+  };
+
+  const handleEditName = () => {
+    setDraftUsername(username ?? '');
+    setProfileMessage(null);
+    setIsEditingName(true);
+  };
+
+  const handleCancelNameEdit = () => {
+    setDraftUsername(username ?? '');
+    setProfileMessage(null);
+    setIsEditingName(false);
+  };
+
+  const handleSaveName = async () => {
+    const nextUsername = draftUsername.trim();
+    if (nextUsername.length < 3) {
+      setProfileMessage('Name must be at least 3 characters.');
+      return;
+    }
+    if (nextUsername === username) {
+      setIsEditingName(false);
+      setProfileMessage(null);
+      return;
+    }
+
+    try {
+      setIsSavingName(true);
+      setProfileMessage(null);
+      const player = await playersApi.updateMe(nextUsername);
+      updateCachedPlayer(player);
+      setUsername(player.username);
+      setDraftUsername(player.username);
+      setEmail(player.email);
+      setIsEditingName(false);
+      setProfileMessage('Name updated.');
+      haptics.success();
+      void playSoundEffectAsync('success');
+    } catch {
+      setProfileMessage('That name could not be saved.');
+      haptics.error();
+      void playSoundEffectAsync('error');
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   const handleNotificationToggle = async (next: boolean) => {
@@ -145,8 +196,48 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Account</Text>
         <View style={styles.card}>
           <View style={styles.accountBlock}>
-            <Text style={styles.accountName}>{username ?? 'Guest'}</Text>
+            <View style={styles.accountHeader}>
+              {isEditingName ? (
+                <TextInput
+                  value={draftUsername}
+                  onChangeText={setDraftUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={64}
+                  placeholder="Profile name"
+                  placeholderTextColor={frigi.textLight}
+                  style={styles.nameInput}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveName}
+                />
+              ) : (
+                <Text style={styles.accountName}>{username ?? 'Guest'}</Text>
+              )}
+              {isEditingName ? (
+                <View style={styles.nameActionRow}>
+                  <Pressable
+                    style={[styles.nameActionButton, styles.nameSecondaryButton]}
+                    onPress={handleCancelNameEdit}
+                    disabled={isSavingName}
+                  >
+                    <Text style={styles.nameSecondaryText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.nameActionButton, styles.namePrimaryButton]}
+                    onPress={handleSaveName}
+                    disabled={isSavingName}
+                  >
+                    <Text style={styles.namePrimaryText}>{isSavingName ? 'Saving' : 'Save'}</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable style={styles.editNameButton} onPress={handleEditName}>
+                  <Text style={styles.editNameText}>Edit</Text>
+                </Pressable>
+              )}
+            </View>
             <Text style={styles.accountEmail}>{email ?? 'Not loaded'}</Text>
+            {profileMessage ? <Text style={styles.profileMessage}>{profileMessage}</Text> : null}
           </View>
         </View>
 
@@ -343,15 +434,81 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
+  accountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   accountName: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '800',
     color: frigi.text,
+  },
+  nameInput: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: frigi.border,
+    paddingHorizontal: 12,
+    color: frigi.text,
+    fontSize: 15,
+    fontWeight: '700',
+    backgroundColor: '#FFFFFF',
+  },
+  editNameButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    backgroundColor: '#FFF1F4',
+    borderWidth: 1,
+    borderColor: '#FBC7D2',
+  },
+  editNameText: {
+    color: frigi.red,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  nameActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  nameActionButton: {
+    minWidth: 58,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  namePrimaryButton: {
+    backgroundColor: frigi.red,
+    borderColor: frigi.red,
+  },
+  nameSecondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: frigi.border,
+  },
+  namePrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  nameSecondaryText: {
+    color: frigi.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
   },
   accountEmail: {
     marginTop: 4,
     fontSize: 12,
     color: frigi.textLight,
+  },
+  profileMessage: {
+    marginTop: 8,
+    fontSize: 12,
+    color: frigi.textMuted,
   },
   card: {
     backgroundColor: frigi.surface,

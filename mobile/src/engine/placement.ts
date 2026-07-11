@@ -18,6 +18,7 @@ export function checkPlacement(
   for (const [r, c] of cells) {
     const cell = getCell(grid, r, c);
     if (!cell) return { valid: false, reason: 'out_of_bounds' };
+    if (cell.blocked) return { valid: false, reason: 'blocked' };
     if (isOccupied(grid, r, c)) return { valid: false, reason: 'collision' };
     if (item.zoneRequirement && cell.zone !== item.zoneRequirement) {
       return { valid: false, reason: `zone_mismatch: requires ${item.zoneRequirement}` };

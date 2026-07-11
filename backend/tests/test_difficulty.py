@@ -35,11 +35,36 @@ def test_campaign_seed_specs_cover_first_50_levels():
     assert specs[-1].id == "campaign-seed-50"
 
 
-def test_campaign_difficulty_curve_is_steeper_in_early_levels():
+def test_campaign_difficulty_curve_is_monotonic_on_measured_scale():
     model = CampaignProgressionModel()
 
     assert model.base_difficulty_for_level(1) == 0.26
-    assert model.base_difficulty_for_level(5) == 0.48
-    assert model.base_difficulty_for_level(10) == 0.78
-    assert model.base_difficulty_for_level(15) == 0.87
-    assert model.base_difficulty_for_level(20) == 0.9
+    assert model.base_difficulty_for_level(5) == 0.43
+    assert model.base_difficulty_for_level(10) == 0.63
+    assert model.base_difficulty_for_level(15) == 0.74
+    assert model.base_difficulty_for_level(20) == 0.85
+    values = [model.base_difficulty_for_level(n) for n in range(1, 51)]
+    assert values == sorted(values)
+
+
+def test_mechanics_unlock_on_schedule():
+    model = CampaignProgressionModel()
+
+    early = model.mechanics_for_level(1)
+    assert early.blocked_cells == 0
+    assert early.decoy_items == 0
+    assert early.constraint_count == 0
+    assert not early.exact_cover
+
+    mid = model.mechanics_for_level(10)
+    assert mid.blocked_cells > 0
+    assert mid.decoy_items > 0
+    assert mid.constraint_count == 1
+
+    late = model.mechanics_for_level(16)
+    assert late.constraint_count == 2
+    assert late.exact_cover
+
+    daily = model.mechanics_for_daily()
+    assert daily.decoy_items > 0
+    assert daily.constraint_count > 0

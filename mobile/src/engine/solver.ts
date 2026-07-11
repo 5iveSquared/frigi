@@ -143,3 +143,40 @@ export function solveLevel(
 
   return backtrack(grid, sorted, []);
 }
+
+// Levels can carry decoy items that don't fit alongside the full pack. Try
+// the full set first, then drop the lowest-point items until a pack exists.
+export function solveWithDecoys(grid: Grid, items: Item[]): PlacedItem[] | null {
+  const full = solveLevel(grid, items);
+  if (full) return full;
+
+  const byPointsAsc = [...items].sort((a, b) => a.points - b.points);
+  for (let dropCount = 1; dropCount <= Math.min(3, items.length - 1); dropCount++) {
+    const combos = kSubsets(byPointsAsc.map((item) => item.id), dropCount);
+    for (const drop of combos) {
+      const dropped = new Set(drop);
+      const solved = solveLevel(grid, items.filter((item) => !dropped.has(item.id)));
+      if (solved) return solved;
+    }
+  }
+  return null;
+}
+
+function kSubsets(ids: string[], k: number): string[][] {
+  if (k === 1) return ids.map((id) => [id]);
+  const result: string[][] = [];
+  const combo: string[] = [];
+  const walk = (start: number) => {
+    if (combo.length === k) {
+      result.push([...combo]);
+      return;
+    }
+    for (let i = start; i < ids.length; i++) {
+      combo.push(ids[i]);
+      walk(i + 1);
+      combo.pop();
+    }
+  };
+  walk(0);
+  return result;
+}

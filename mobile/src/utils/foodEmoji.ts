@@ -2,6 +2,10 @@ import { findCatalogEmoji } from '@frigi/shared';
 
 const EMOJI_MAP: [string, string][] = [
   ['frozen pizza', '🍕'],
+  ['watermelon', '🍉'],
+  ['turkey',     '🦃'],
+  ['lasagna',    '🍝'],
+  ['egg',        '🥚'],
   ['ice cubes',  '🧊'],
   ['ice cube',   '🧊'],
   ['apple',      '🍎'],

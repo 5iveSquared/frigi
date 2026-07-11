@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FridgeGrid } from '~/components/game/FridgeGrid';
 import { ItemTray } from '~/components/game/ItemTray';
 import { ScoreHUD } from '~/components/game/ScoreHUD';
+import { ConstraintBadge } from '~/components/game/ConstraintBadge';
+import { evaluateConstraints } from '~/engine/constraints';
 import { useGameStore } from '~/store/gameStore';
 import { useScoreSubmit } from '~/hooks/useScoreSubmit';
 import { frigi } from '~/utils/colors';
@@ -40,6 +42,7 @@ export default function GameScreen() {
   const level = useGameStore((s) => s.level);
   const grid = useGameStore((s) => s.grid);
   const unplaced = useGameStore((s) => s.unplacedItems);
+  const placedItems = useGameStore((s) => s.placedItems);
   const activeItem = useGameStore((s) => s.activeItem);
   const activeRotation = useGameStore((s) => s.activeRotation);
   const setActiveItem = useGameStore((s) => s.setActiveItem);
@@ -54,6 +57,14 @@ export default function GameScreen() {
   const fridgeMetrics = getFridgeMetrics(windowWidth, grid.cols);
 
   const allPlaced   = unplaced.length === 0;
+  const canSubmit   = placedItems.length > 0;
+  const constraintResults = useMemo(
+    () =>
+      level?.constraints?.length && grid
+        ? evaluateConstraints(grid, placedItems, level.constraints)
+        : [],
+    [grid, placedItems, level]
+  );
   const dragTargetCell = useMemo(
     () => {
       if (!dragState) return null;
@@ -140,11 +151,21 @@ export default function GameScreen() {
       {/* HUD */}
       <ScoreHUD />
 
+      {/* Goals — live constraint status */}
+      {constraintResults.length > 0 && (
+        <View style={styles.goalsRow}>
+          {constraintResults.map(({ constraint, satisfied }) => (
+            <ConstraintBadge key={constraint.id} constraint={constraint} satisfied={satisfied} />
+          ))}
+        </View>
+      )}
+
       {/* Grid — flex fill */}
       <FridgeGrid dragTargetCell={dragTargetCell} onGridMeasure={setGridFrame} />
 
-      {/* Finish button — appears when all items placed */}
-      {allPlaced && (
+      {/* Submit — available as soon as something is packed; not everything
+          has to fit, picking the best subset is the game */}
+      {canSubmit && (
         <View
           style={[
             styles.finishBar,
@@ -152,7 +173,9 @@ export default function GameScreen() {
           ]}
         >
           <Pressable onPress={handleFinish} style={[styles.finishBtn, { backgroundColor: environment.accent }]}>
-            <Text style={styles.finishText}>SUBMIT  →</Text>
+            <Text style={styles.finishText}>
+              {allPlaced ? 'SUBMIT  →' : `SUBMIT  ·  ${placedItems.length}/${placedItems.length + unplaced.length} PACKED`}
+            </Text>
           </Pressable>
         </View>
       )}
@@ -215,6 +238,14 @@ const styles = StyleSheet.create({
   backIcon: {
     fontSize: 16,
     color: frigi.textMuted,
+  },
+  goalsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   finishBar: {
     paddingHorizontal: 24,

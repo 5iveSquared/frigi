@@ -39,21 +39,26 @@ def test_normalize_level_data_rejects_duplicate_food_items():
         service._normalize_level_data(level_data)
 
 
-def test_generate_procedural_level_uses_unique_food_items():
+def test_carve_level_uses_unique_food_items_and_keeps_carved_shapes():
     service = LevelGeneratorService(db=None)
 
-    level_data = service._generate_procedural_level(
+    carve, normalized = service._carve_level(
         difficulty=0.75,
         theme="grocery",
-        player_id="test-player",
+        progression_index=12,
         seed_key="unique-food-items",
     )
 
-    item_ids = [item["id"] for item in level_data["items"]]
-    item_names = [item["name"].lower() for item in level_data["items"]]
+    item_ids = [item["id"] for item in normalized["items"]]
+    item_names = [item["name"].lower() for item in normalized["items"]]
 
     assert len(item_ids) == len(set(item_ids))
     assert len(item_names) == len(set(item_names))
+    # normalization must not snap carved shapes back to catalog variants
+    shapes_by_id = {item["id"]: item["shape"] for item in carve.level_data["items"]}
+    for item in normalized["items"]:
+        assert item["shape"] == shapes_by_id[item["id"]]
+    assert carve.optimal_score > 0
 
 
 def test_normalize_level_data_uses_catalog_definition_for_known_foods():

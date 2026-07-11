@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend-api",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "PYTHONPATH=/Volumes/Crucial/Projects/frigi/backend/.venv/lib/python3.11/site-packages",
+        "python3",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--reload",
+        "--reload-dir",
+        "/Volumes/Crucial/Projects/frigi/backend/app",
+        "--app-dir",
+        "/Volumes/Crucial/Projects/frigi/backend",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "${PORT}"
+      ],
+      "port": 8000,
+      "autoPort": true
+    },
+    {
+      "name": "mobile-expo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--workspace=mobile", "--", "--port", "${PORT}"],
+      "port": 8081,
+      "autoPort": true
+    }
+  ]
+}

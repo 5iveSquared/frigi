@@ -136,6 +136,11 @@ export const playersApi = {
     return mapProgressSummary(data);
   },
 
+  updateMe: async (username: string): Promise<PlayerProfile> => {
+    const { data } = await apiClient.patch<BackendPlayerProfile>('/players/me', { username });
+    return mapPlayer(data);
+  },
+
   register: async (username: string, email: string, password: string): Promise<PlayerProfile> => {
     const { data } = await apiClient.post<BackendPlayerProfile>('/players/register', {
       username,

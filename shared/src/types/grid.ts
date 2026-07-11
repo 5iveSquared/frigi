@@ -5,6 +5,8 @@ export interface Cell {
   col: number;
   zone: CellZone;
   occupied: boolean;
+  /** Pre-filled with leftovers by the generator — never placeable or clearable. */
+  blocked?: boolean;
   itemId: string | null;
 }
 

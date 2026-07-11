@@ -5,7 +5,7 @@ import { placeItem, removeItem } from '~/engine/grid';
 import { rotateShape, getOccupiedCells } from '~/engine/rotation';
 import { checkPlacement } from '~/engine/placement';
 import { calculateScore } from '~/engine/scoring';
-import { solveLevel } from '~/engine/solver';
+import { solveWithDecoys } from '~/engine/solver';
 
 interface GameState {
   level: Level | null;
@@ -126,13 +126,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       cells: level.grid.cells.map((row) =>
         row.map((cell) => ({
           ...cell,
-          occupied: false,
+          occupied: !!cell.blocked,
           itemId: null,
         }))
       ),
     };
 
-    const solution = solveLevel(baseGrid, level.items);
+    const solution = solveWithDecoys(baseGrid, level.items);
     if (!solution) return false;
 
     let solvedGrid = baseGrid;
@@ -141,10 +141,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       solvedGrid = placeItem(solvedGrid, item.id, cells);
     }
 
+    const solvedIds = new Set(solution.map((item) => item.id));
     set({
       grid: solvedGrid,
       placedItems: solution,
-      unplacedItems: [],
+      unplacedItems: level.items.filter((item) => !solvedIds.has(item.id)),
       activeItem: null,
       activeRotation: 0,
     });

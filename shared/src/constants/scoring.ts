@@ -1,5 +1,5 @@
 export const SCORE_WEIGHTS = {
-  EFFICIENCY_MULTIPLIER: 100,   // fill_ratio × grid_area × 100
+  PACKING_MULTIPLIER: 10,       // packed item points × 10
   TIME_BASE: 500,
   TIME_DECAY: 0.005,            // e^(−0.005 × elapsed_seconds)
   MOVE_BASE: 200,
