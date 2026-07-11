@@ -131,6 +131,10 @@ export async function ensureAuthenticatedPlayer(): Promise<PlayerProfile> {
   return inFlightAuth;
 }
 
+export function updateCachedPlayer(player: PlayerProfile): void {
+  cachedPlayer = player;
+}
+
 export async function signOut(): Promise<void> {
   cachedPlayer = null;
   await clearAuthState();

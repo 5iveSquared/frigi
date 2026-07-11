@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from jose import jwt
 from passlib.context import CryptContext
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +19,7 @@ from app.schemas.player import (
     PlayerLevelProgressResponse,
     PlayerProgressSummaryResponse,
     PlayerResponse,
+    PlayerUpdate,
     TokenResponse,
 )
 
@@ -53,6 +55,37 @@ class PlayerService:
     async def get_player(self, player_id: str) -> Player | None:
         result = await self.db.execute(select(Player).where(Player.id == player_id))
         return result.scalar_one_or_none()
+
+    async def update_player(self, player_id: str, body: PlayerUpdate) -> Player:
+        username = body.username.strip()
+        if len(username) < 3:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Username must be at least 3 characters",
+            )
+        if len(username) > 64:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Username must be 64 characters or fewer",
+            )
+
+        result = await self.db.execute(select(Player).where(Player.id == player_id))
+        player = result.scalar_one_or_none()
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+
+        existing_result = await self.db.execute(
+            select(Player).where(Player.username == username, Player.id != player_id)
+        )
+        if existing_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username is already taken",
+            )
+
+        player.username = username
+        await self.db.flush()
+        return player
 
     async def get_progress_summary(self, player_id: str) -> PlayerProgressSummaryResponse:
         result = await self.db.execute(

@@ -9,21 +9,34 @@ class CampaignSeedSpec:
     theme: str
 
 
+@dataclass(frozen=True)
+class MechanicProfile:
+    """Which mechanics are active for a level. New mechanics unlock on a
+    schedule so the campaign introduces novelty, not just a bigger grid."""
+
+    blocked_cells: int
+    decoy_items: int
+    constraint_count: int
+    exact_cover: bool
+
+
 class CampaignProgressionModel:
     SEED_LEVEL_COUNT = 50
-    MAX_DIFFICULTY = 0.9
+    # Difficulty values live on the measured scale produced by
+    # pack_solver.measured_difficulty — recalibrate them together.
+    MAX_DIFFICULTY = 0.85
     _MILESTONES: tuple[tuple[int, float], ...] = (
         (1, 0.26),
-        (2, 0.31),
-        (3, 0.36),
-        (4, 0.42),
-        (5, 0.48),
-        (6, 0.54),
-        (7, 0.60),
-        (8, 0.66),
-        (9, 0.72),
-        (10, 0.78),
-        (15, 0.87),
+        (2, 0.30),
+        (3, 0.34),
+        (4, 0.38),
+        (5, 0.43),
+        (6, 0.47),
+        (7, 0.51),
+        (8, 0.55),
+        (9, 0.59),
+        (10, 0.63),
+        (15, 0.74),
         (20, MAX_DIFFICULTY),
     )
     _THEME_CYCLE: tuple[str, ...] = (
@@ -84,3 +97,47 @@ class CampaignProgressionModel:
     def clamp_to_level_band(self, level_number: int, difficulty: float) -> float:
         minimum, maximum = self.difficulty_band_for_level(level_number)
         return round(max(minimum, min(maximum, difficulty)), 2)
+
+    # Mechanic introduction schedule:
+    # L1-3 pure packing, L4 blocked cells, L7 decoys, L10 constraints,
+    # L13 bigger leftover blocks, L16+ periodic exact-cover levels.
+    def mechanics_for_level(self, level_number: int) -> MechanicProfile:
+        level_number = max(1, level_number)
+        if level_number < 4:
+            blocked = 0
+        elif level_number < 8:
+            blocked = 1
+        elif level_number < 13:
+            blocked = 2
+        else:
+            blocked = 4
+
+        if level_number < 7:
+            decoys = 0
+        elif level_number < 12:
+            decoys = 1
+        else:
+            decoys = 2
+
+        if level_number < 10:
+            constraints = 0
+        elif level_number < 15:
+            constraints = 1
+        else:
+            constraints = 2
+
+        exact_cover = level_number >= 16 and level_number % 3 == 1
+        return MechanicProfile(
+            blocked_cells=blocked,
+            decoy_items=decoys,
+            constraint_count=constraints,
+            exact_cover=exact_cover,
+        )
+
+    def mechanics_for_daily(self) -> MechanicProfile:
+        return MechanicProfile(
+            blocked_cells=2,
+            decoy_items=2,
+            constraint_count=2,
+            exact_cover=False,
+        )

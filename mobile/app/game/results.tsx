@@ -220,12 +220,34 @@ export default function ResultsScreen() {
               </Text>
             </View>
             <View style={[styles.scoreBox, isDaily && styles.scoreBoxDaily]}>
+              <Text style={[styles.scoreLabel, isDaily && styles.scoreLabelDaily]}>Packed</Text>
+              <Text style={[styles.scoreValue, isDaily ? styles.scoreValueDailyMint : styles.scoreValueMint]}>
+                {score ? `+${score.packing}` : '--'}
+              </Text>
+            </View>
+            <View style={[styles.scoreBox, isDaily && styles.scoreBoxDaily]}>
               <Text style={[styles.scoreLabel, isDaily && styles.scoreLabelDaily]}>Time Bonus</Text>
               <Text style={[styles.scoreValue, isDaily ? styles.scoreValueDailyMint : styles.scoreValueMint]}>
                 {score ? `+${score.time}` : '--'}
               </Text>
             </View>
           </View>
+
+          {score && score.constraintResults.length > 0 && (
+            <View style={styles.goalsCard}>
+              {score.constraintResults.map(({ constraint, satisfied }) => (
+                <View key={constraint.id} style={styles.goalRow}>
+                  <Text style={styles.goalMark}>{satisfied ? '✅' : '❌'}</Text>
+                  <Text style={[styles.goalText, isDaily && styles.goalTextDaily]} numberOfLines={2}>
+                    {constraint.description}
+                  </Text>
+                  <Text style={[styles.goalPoints, !satisfied && styles.goalPointsMissed]}>
+                    {satisfied ? `+${constraint.points}` : `0/${constraint.points}`}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={[styles.coinRow, isDaily && styles.coinRowDaily]}>
             <Text style={[styles.coinText, isDaily && styles.coinTextDaily]}>🪙 +{coins} Coins</Text>
@@ -508,6 +530,39 @@ const styles = StyleSheet.create({
   },
   scoreValueDailyMint: {
     color: polar.emerald,
+  },
+  goalsCard: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  goalMark: {
+    fontSize: 14,
+  },
+  goalText: {
+    flex: 1,
+    fontSize: 12,
+    color: frigi.text,
+    fontWeight: '600',
+  },
+  goalTextDaily: {
+    color: frigi.text,
+  },
+  goalPoints: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: frigi.mint,
+  },
+  goalPointsMissed: {
+    color: frigi.textLight,
   },
   coinRow: {
     backgroundColor: '#FFF7ED',

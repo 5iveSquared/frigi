@@ -26,3 +26,60 @@ def test_star_rating_uses_score_ratio_against_optimal():
     assert service._star_rating(total_score=800, optimal_score=1000) == 2
     assert service._star_rating(total_score=919, optimal_score=1000) == 2
     assert service._star_rating(total_score=920, optimal_score=1000) == 3
+
+
+def _grid_2x2(zone: str = "standard") -> dict:
+    return {
+        "rows": 2,
+        "cols": 2,
+        "cells": [
+            [
+                {"row": r, "col": c, "zone": zone, "occupied": False, "blocked": False, "itemId": None}
+                for c in range(2)
+            ]
+            for r in range(2)
+        ],
+    }
+
+
+def test_validate_placements_rejects_forged_and_overlapping_items():
+    service = ScoringService(db=None)
+    level_items = [
+        {"id": "a", "shape": [[1, 1]], "zoneRequirement": None, "points": 16},
+        {"id": "b", "shape": [[1]], "zoneRequirement": None, "points": 8},
+    ]
+    placed = [
+        {"id": "a", "anchorRow": 0, "anchorCol": 0, "rotatedShape": [[1, 1]]},
+        # overlaps item a
+        {"id": "b", "anchorRow": 0, "anchorCol": 1, "rotatedShape": [[1]]},
+        # not a level item
+        {"id": "ghost", "anchorRow": 1, "anchorCol": 0, "rotatedShape": [[1]]},
+    ]
+
+    validated = service._validate_placements(_grid_2x2(), placed, level_items)
+
+    assert [item["id"] for item in validated] == ["a"]
+
+
+def test_validate_placements_rejects_invented_shapes():
+    service = ScoringService(db=None)
+    level_items = [{"id": "a", "shape": [[1]], "zoneRequirement": None, "points": 8}]
+    placed = [{"id": "a", "anchorRow": 0, "anchorCol": 0, "rotatedShape": [[1, 1, 1]]}]
+
+    assert service._validate_placements(_grid_2x2(), placed, level_items) == []
+
+
+def test_calc_packing_scores_points_of_validated_items():
+    service = ScoringService(db=None)
+    level_items = [
+        {"id": "a", "shape": [[1, 1]], "zoneRequirement": None, "points": 16},
+        {"id": "b", "shape": [[1]], "zoneRequirement": None, "points": 8},
+    ]
+    validated = [
+        {"id": "a", "anchorRow": 0, "anchorCol": 0, "rotatedShape": [[1, 1]]},
+    ]
+
+    packing, fill = service._calc_packing(_grid_2x2(), validated, level_items)
+
+    assert packing == 160
+    assert fill == 0.5

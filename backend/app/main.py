@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,6 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.session import engine
 from app.routers import health, players, levels, sessions, scores
+
+# Without this, app-level logger.info() calls throughout the codebase
+# (scoring, sessions, level generation) are silently dropped: the root
+# logger has no handler and defaults to WARNING.
+logging.basicConfig(
+    level=settings.log_level.upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 
 @asynccontextmanager

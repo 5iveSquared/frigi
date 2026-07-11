@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from app.services.level_generator import LevelGeneratorService
+from app.services.carve_generator import CarveGenerator
 from app.services.progression_model import CampaignProgressionModel, CampaignSeedSpec
 
 
@@ -9,6 +9,7 @@ class LevelAudit:
     id: str
     progression_index: int
     difficulty: float
+    measured_difficulty: float
     theme: str
     rows: int
     cols: int
@@ -18,7 +19,9 @@ class LevelAudit:
     constraint_ids: tuple[str, ...]
     item_area: int
     fill_ratio: float
-    complexity_score: float
+    solution_count: int
+    backtracks: int
+    blocked_cells: int
     signature: str
 
 
@@ -40,51 +43,61 @@ class GameMasterReport:
 
 
 class GameMasterService:
+    MEASURED_BAND_ERROR = 0.15
+    MEASURED_BAND_WARNING = 0.08
+
     def __init__(
         self,
         progression_model: CampaignProgressionModel | None = None,
-        generator: LevelGeneratorService | None = None,
+        generator: CarveGenerator | None = None,
     ):
         self.progression_model = progression_model or CampaignProgressionModel()
-        self.generator = generator or LevelGeneratorService(db=None)
+        self.generator = generator or CarveGenerator()
 
     def review_campaign(self, count: int | None = None) -> GameMasterReport:
         specs = self.progression_model.seed_specs(count)
-        audits = tuple(self._audit_seed(spec) for spec in specs)
-        return GameMasterReport(levels=audits, issues=tuple(self._find_issues(audits)))
+        audits: list[LevelAudit] = []
+        issues: list[GameMasterIssue] = []
+        for spec in specs:
+            try:
+                audits.append(self._audit_seed(spec))
+            except RuntimeError as error:
+                issues.append(
+                    GameMasterIssue(severity="error", level_id=spec.id, message=str(error))
+                )
+        issues.extend(self._find_issues(tuple(audits)))
+        return GameMasterReport(levels=tuple(audits), issues=tuple(issues))
 
     def _audit_seed(self, seed: CampaignSeedSpec) -> LevelAudit:
-        raw = self.generator._generate_procedural_level(
+        mechanics = self.progression_model.mechanics_for_level(seed.progression_index)
+        carve = self.generator.generate(
             difficulty=seed.difficulty,
             theme=seed.theme,
-            player_id=seed.id,
+            mechanics=mechanics,
             seed_key=seed.id,
         )
-        level = self.generator._normalize_level_data(raw)
+        level = carve.level_data
         grid = level["grid"]
         items = level["items"]
         rows = grid["rows"]
         cols = grid["cols"]
+        blocked_cells = sum(
+            1 for row in grid["cells"] for cell in row if cell.get("blocked")
+        )
         item_area = sum(self._item_area(item) for item in items)
-        fill_ratio = item_area / (rows * cols)
+        packable = rows * cols - blocked_cells
         zone_requirements = tuple(
             sorted(item.get("zoneRequirement") or "any" for item in items)
         )
         item_ids = tuple(sorted(item["id"] for item in items))
         item_signatures = tuple(sorted(self._item_signature(item) for item in items))
         constraint_ids = tuple(sorted(constraint["id"] for constraint in level.get("constraints", [])))
-        complexity_score = self._complexity_score(
-            grid_area=rows * cols,
-            item_area=item_area,
-            item_count=len(items),
-            constrained_item_count=sum(1 for item in items if item.get("zoneRequirement")),
-            awkward_item_count=sum(1 for item in items if self._is_awkward_shape(item["shape"])),
-        )
 
         return LevelAudit(
             id=seed.id,
             progression_index=seed.progression_index,
             difficulty=seed.difficulty,
+            measured_difficulty=carve.measured,
             theme=seed.theme,
             rows=rows,
             cols=cols,
@@ -93,8 +106,10 @@ class GameMasterService:
             zone_requirements=zone_requirements,
             constraint_ids=constraint_ids,
             item_area=item_area,
-            fill_ratio=round(fill_ratio, 3),
-            complexity_score=round(complexity_score, 3),
+            fill_ratio=round(item_area / packable, 3) if packable else 0.0,
+            solution_count=carve.solution_count,
+            backtracks=carve.backtracks,
+            blocked_cells=blocked_cells,
             signature=self._signature(
                 rows=rows,
                 cols=cols,
@@ -108,7 +123,6 @@ class GameMasterService:
         issues: list[GameMasterIssue] = []
         seen_signatures: dict[str, str] = {}
         previous: LevelAudit | None = None
-        previous_complexity_peak = 0.0
 
         for level in levels:
             if level.signature in seen_signatures:
@@ -120,6 +134,30 @@ class GameMasterService:
                     )
                 )
             seen_signatures[level.signature] = level.id
+
+            band_gap = abs(level.measured_difficulty - level.difficulty)
+            if band_gap > self.MEASURED_BAND_ERROR:
+                issues.append(
+                    GameMasterIssue(
+                        severity="error",
+                        level_id=level.id,
+                        message=(
+                            f"Measured difficulty {level.measured_difficulty} is far from "
+                            f"target {level.difficulty}"
+                        ),
+                    )
+                )
+            elif band_gap > self.MEASURED_BAND_WARNING:
+                issues.append(
+                    GameMasterIssue(
+                        severity="warning",
+                        level_id=level.id,
+                        message=(
+                            f"Measured difficulty {level.measured_difficulty} drifts from "
+                            f"target {level.difficulty}"
+                        ),
+                    )
+                )
 
             if previous:
                 if level.difficulty < previous.difficulty:
@@ -149,37 +187,9 @@ class GameMasterService:
                         )
                     )
 
-            if level.progression_index <= 10:
-                minimum_expected_complexity = previous_complexity_peak - 0.75
-                if level.complexity_score < minimum_expected_complexity:
-                    issues.append(
-                        GameMasterIssue(
-                            severity="warning",
-                            level_id=level.id,
-                            message="Complexity dropped sharply for an early campaign level",
-                        )
-                    )
-                previous_complexity_peak = max(previous_complexity_peak, level.complexity_score)
-
             previous = level
 
         return issues
-
-    def _complexity_score(
-        self,
-        grid_area: int,
-        item_area: int,
-        item_count: int,
-        constrained_item_count: int,
-        awkward_item_count: int,
-    ) -> float:
-        fill_pressure = item_area / grid_area
-        return (
-            fill_pressure * 10
-            + item_count * 0.7
-            + constrained_item_count * 0.8
-            + awkward_item_count * 0.6
-        )
 
     def _signature(
         self,
@@ -205,11 +215,3 @@ class GameMasterService:
 
     def _item_area(self, item: dict) -> int:
         return sum(sum(row) for row in item["shape"])
-
-    def _is_awkward_shape(self, shape: list[list[int]]) -> bool:
-        filled = [(r, c) for r, row in enumerate(shape) for c, value in enumerate(row) if value]
-        if len(filled) <= 2:
-            return False
-        rows = {row for row, _ in filled}
-        cols = {col for _, col in filled}
-        return len(rows) > 1 and len(cols) > 1

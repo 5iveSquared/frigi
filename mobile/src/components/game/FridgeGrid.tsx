@@ -201,14 +201,17 @@ export function FridgeGrid({ dragTargetCell = null, onGridMeasure }: FridgeGridP
                             { backgroundColor: cell.occupied
                                 ? (placedItem ? placedItem.color + '33' : frigiZones[cell.zone])
                                 : frigiZones[cell.zone] },
+                            cell.blocked && styles.cellBlocked,
                             isFootprintPreview && styles.cellFootprintTarget,
                             canTarget  && styles.cellTarget,
                             isDragTarget && canTarget && styles.cellDragTarget,
                             pressed && canTarget && styles.cellPressed,
-                            cell.occupied && { borderColor: placedItem?.color + '88' },
+                            cell.occupied && !cell.blocked && { borderColor: placedItem?.color + '88' },
                           ]}
                         >
-                          {cell.occupied && emoji ? (
+                          {cell.blocked ? (
+                            <Text style={[styles.emoji, styles.blockedEmoji, { fontSize: Math.max(20, 26 * sizeScale) }]}>🥡</Text>
+                          ) : cell.occupied && emoji ? (
                             <Text style={[styles.emoji, { fontSize: Math.max(22, 30 * sizeScale) }]}>{emoji}</Text>
                           ) : canTarget ? (
                             <Text style={[styles.dropHint, { fontSize: Math.max(16, 20 * sizeScale) }]}>+</Text>
@@ -431,6 +434,13 @@ const styles = StyleSheet.create({
   },
   cellPressed: {
     backgroundColor: 'rgba(255,77,106,0.12)',
+  },
+  cellBlocked: {
+    backgroundColor: 'rgba(71,85,105,0.28)',
+    borderColor: 'rgba(71,85,105,0.45)',
+  },
+  blockedEmoji: {
+    opacity: 0.75,
   },
 
   emoji: {

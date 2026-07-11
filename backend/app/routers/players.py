@@ -7,6 +7,7 @@ from app.schemas.player import (
     PlayerLogin,
     PlayerProgressSummaryResponse,
     PlayerResponse,
+    PlayerUpdate,
     TokenResponse,
 )
 from app.services.player_service import PlayerService
@@ -36,6 +37,16 @@ async def me(
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     return player
+
+
+@router.patch("/me", response_model=PlayerResponse)
+async def update_me(
+    body: PlayerUpdate,
+    player_id: str = Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PlayerService(db)
+    return await service.update_player(player_id, body)
 
 
 @router.get("/me/progress", response_model=PlayerProgressSummaryResponse)

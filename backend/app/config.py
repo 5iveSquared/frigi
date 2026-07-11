@@ -1,9 +1,17 @@
+from pathlib import Path
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Resolved relative to this file, not the process's CWD — uvicorn's
+    # --app-dir only affects sys.path, not the OS working directory, so a
+    # relative ".env" here silently misses backend/.env whenever the process
+    # is launched from anywhere else (e.g. the repo root).
+    model_config = SettingsConfigDict(env_file=str(_BACKEND_ENV_FILE), extra="ignore")
 
     database_url: str = "postgresql+asyncpg://frigi:frigi_dev@localhost:5433/frigi"
     db_schema: str = "frigi"

@@ -13,7 +13,16 @@ from app.models.player_level_progress import PlayerLevelProgress
 from app.models.session import GameSession
 from app.models.score import Score
 from app.schemas.session import SessionComplete
+from app.services.constraint_engine import evaluate_constraints, satisfied_points
 from app.services.difficulty_engine import DifficultyEngine
+from app.services.pack_solver import unique_rotations
+from app.services.scoring_rules import (
+    MOVE_BASE,
+    MOVE_PENALTY,
+    PACKING_MULTIPLIER,
+    TIME_BASE,
+    TIME_DECAY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,25 +101,35 @@ class ScoringService:
         session.final_placement = body.final_placement
         session.completed_at = datetime.now(timezone.utc)
 
-        placement = body.final_placement
+        placement = body.final_placement or {}
         elapsed_seconds = body.duration_ms / 1000
         move_count = session.move_count
 
-        efficiency_score, efficiency_pct = self._calc_efficiency(placement)
-        time_score = math.floor(500 * math.exp(-0.005 * elapsed_seconds))
-        move_score = max(0, 200 - move_count * 2)
-        total_score = efficiency_score + time_score + move_score
+        validated_items = self._validate_placements(
+            level.grid_config, placement.get("placedItems", []), level.items or []
+        )
+        packing_score, efficiency_pct = self._calc_packing(
+            level.grid_config, validated_items, level.items or []
+        )
+        constraint_results = evaluate_constraints(
+            level.grid_config, validated_items, level.constraints or []
+        )
+        constraint_score = satisfied_points(constraint_results)
+        time_score = math.floor(TIME_BASE * math.exp(-TIME_DECAY * elapsed_seconds))
+        move_score = max(0, MOVE_BASE - move_count * MOVE_PENALTY)
+        total_score = packing_score + constraint_score + time_score + move_score
         new_elo, performance_pct = self.difficulty_engine.update_elo(
             player.elo_rating,
             total_score,
             level.optimal_score,
         )
         logger.info(
-            "scoring.complete.calculated session_id=%s level_id=%s total_score=%s efficiency_score=%s time_score=%s move_score=%s efficiency_pct=%.4f old_elo=%.2f new_elo=%.2f",
+            "scoring.complete.calculated session_id=%s level_id=%s total_score=%s packing_score=%s constraint_score=%s time_score=%s move_score=%s efficiency_pct=%.4f old_elo=%.2f new_elo=%.2f",
             session_id,
             level.id,
             total_score,
-            efficiency_score,
+            packing_score,
+            constraint_score,
             time_score,
             move_score,
             efficiency_pct,
@@ -126,9 +145,9 @@ class ScoringService:
             player_id=player_id,
             level_id=session.level_id,
             total_score=total_score,
-            efficiency_score=efficiency_score,
+            efficiency_score=packing_score,
             time_score=time_score,
-            constraint_score=0,
+            constraint_score=constraint_score,
             move_score=move_score,
             efficiency_pct=efficiency_pct,
         )
@@ -162,15 +181,88 @@ class ScoringService:
         )
         return session
 
-    def _calc_efficiency(self, placement: dict) -> tuple[int, float]:
-        placed_items = placement.get("placedItems", [])
-        occupied = sum(
-            sum(cell for row in item.get("rotatedShape", []) for cell in row)
-            for item in placed_items
+    def _validate_placements(
+        self,
+        grid: dict,
+        placed_items: list[dict],
+        level_items: list[dict],
+    ) -> list[dict]:
+        """Server-side check of the reported placement: items must exist on the
+        level, use a real rotation of their shape, stay in bounds, respect zone
+        requirements, and never overlap each other or blocked cells."""
+        items_by_id = {item["id"]: item for item in level_items}
+        cell_lookup: dict[tuple[int, int], dict] = {}
+        for row in grid.get("cells", []):
+            for cell in row:
+                cell_lookup[(cell["row"], cell["col"])] = cell
+
+        validated: list[dict] = []
+        claimed: set[tuple[int, int]] = set()
+        seen_ids: set[str] = set()
+        for placed in placed_items:
+            item_id = placed.get("id")
+            level_item = items_by_id.get(item_id)
+            if not level_item or item_id in seen_ids:
+                continue
+            shape = placed.get("rotatedShape") or placed.get("shape")
+            if not shape:
+                continue
+            shape_key = tuple(tuple(row) for row in shape)
+            if shape_key not in unique_rotations(level_item["shape"]):
+                continue
+
+            anchor_row = placed.get("anchorRow", 0)
+            anchor_col = placed.get("anchorCol", 0)
+            cells = {
+                (anchor_row + r, anchor_col + c)
+                for r, row in enumerate(shape)
+                for c, filled in enumerate(row)
+                if filled
+            }
+            valid = True
+            for position in cells:
+                cell = cell_lookup.get(position)
+                if cell is None or cell.get("blocked") or position in claimed:
+                    valid = False
+                    break
+                zone_requirement = level_item.get("zoneRequirement")
+                if zone_requirement and cell["zone"] != zone_requirement:
+                    valid = False
+                    break
+            if not valid:
+                continue
+            claimed.update(cells)
+            seen_ids.add(item_id)
+            validated.append(
+                {
+                    "id": item_id,
+                    "anchorRow": anchor_row,
+                    "anchorCol": anchor_col,
+                    "rotatedShape": [list(row) for row in shape],
+                }
+            )
+        return validated
+
+    def _calc_packing(
+        self,
+        grid: dict,
+        validated_items: list[dict],
+        level_items: list[dict],
+    ) -> tuple[int, float]:
+        points_by_id = {item["id"]: item.get("points", 0) for item in level_items}
+        packed_points = sum(points_by_id.get(item["id"], 0) for item in validated_items)
+        packed_cells = sum(
+            sum(cell for row in item["rotatedShape"] for cell in row)
+            for item in validated_items
         )
-        grid_area = placement.get("gridArea", 20)
-        fill_ratio = occupied / grid_area if grid_area > 0 else 0
-        return math.floor(fill_ratio * grid_area * 100), fill_ratio
+        packable_cells = sum(
+            1
+            for row in grid.get("cells", [])
+            for cell in row
+            if not cell.get("blocked")
+        )
+        fill_ratio = packed_cells / packable_cells if packable_cells > 0 else 0.0
+        return packed_points * PACKING_MULTIPLIER, fill_ratio
 
     async def _update_level_progress(
         self,

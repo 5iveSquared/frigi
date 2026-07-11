@@ -12,6 +12,10 @@ class PlayerLogin(BaseModel):
     password: str
 
 
+class PlayerUpdate(BaseModel):
+    username: str
+
+
 class PlayerResponse(BaseModel):
     model_config = {"from_attributes": True}
 
